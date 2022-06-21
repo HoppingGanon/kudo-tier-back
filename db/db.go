@@ -55,8 +55,10 @@ func migrateDB() {
 	}
 
 	Db.AutoMigrate(
-		&TempSession{},
 		&Session{},
+		&TempSession{},
+		&User{},
+		&AccessLog{},
 	)
 	println("マイグレート")
 

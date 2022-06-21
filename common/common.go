@@ -3,8 +3,11 @@ package common
 import (
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"math/big"
+	"time"
 )
 
 func GetBinSHA256(s string) []byte {
@@ -39,4 +42,18 @@ func MakeRandomChar() string {
 	} else {
 		return string(48 + randNum - 52)
 	}
+}
+
+func MakeSession() (string, error) {
+	// 1兆通りのランダムな数字を生成する
+	max, _ := new(big.Int).SetString("1000000000000", 10)
+	n, err := rand.Int(rand.Reader, max)
+	if err != nil {
+		return "", errors.New("乱数を生成できません")
+	}
+
+	// 1兆通りのランダムな数字と生成時間を文字列結合して、SHA256でハッシュ文字列をsession_idとする
+	sessionId := base64.RawURLEncoding.EncodeToString([]byte(GetSHA256(time.Now().Format("2006-01-02-15-04-05") + ":" + n.Text(10))))
+
+	return sessionId, nil
 }
