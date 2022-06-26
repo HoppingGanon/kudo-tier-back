@@ -20,6 +20,7 @@ func InitDb() *gorm.DB {
 	return Db
 }
 
+// データベースに接続する関数
 func connectDB() *gorm.DB {
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=%s",
 		os.Getenv("DB_HOST"),
@@ -48,18 +49,14 @@ func connectDB() *gorm.DB {
 	return Db
 }
 
+// データベースのテーブルを毎グレートする関数
 func migrateDB() {
-	if !Db.Migrator().HasTable(&TempSession{}) {
-		Db.Migrator().CreateTable(&TempSession{})
-		println("テーブル")
-	}
-
 	Db.AutoMigrate(
 		&Session{},
 		&TempSession{},
 		&User{},
 		&AccessLog{},
 	)
-	println("マイグレート")
+	println("マイグレートを実行しました")
 
 }

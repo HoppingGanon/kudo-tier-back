@@ -1,13 +1,14 @@
 package rest
 
 type TempSession struct {
-	SessionId     string `json:"session_id"`
-	CodeChallenge string `json:"code_challenge"`
+	SessionId     string `json:"sessionId"`
+	CodeChallenge string `json:"codeChallenge"`
 }
 
 type Session struct {
-	SessionId   string `json:"session_id"`
-	ExpiredTime string `json:"expired_time"`
+	SessionId   string `json:"sessionId"`
+	ExpiredTime string `json:"expiredTime"`
+	IsNew       bool   `json:"isNew"`
 }
 
 type TwitterToken struct {
@@ -17,12 +18,12 @@ type TwitterToken struct {
 	Scope       string `json:"scope"`
 }
 
-type TwitterUser struct {
-	Data TwitterUserData `json:"data"`
-}
-
 type TwitterUserData struct {
 	Id       string `json:"id"`
 	Name     string `json:"name"`
 	UserName string `json:"username"`
+}
+
+type TwitterUser struct {
+	Data TwitterUserData `json:"data"`
 }

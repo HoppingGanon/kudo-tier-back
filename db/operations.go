@@ -52,12 +52,9 @@ func CreateUser(twitterId string, createTime time.Time, name string, isNew strin
 		id = common.MakeRandomChars(userIdSize)
 		if !ExistsUserId(id) {
 			user := User{
-				Id:             "",
-				TwitterId:      twitterId,
-				CreationTime:   createTime,
-				LastAccessTime: createTime,
-				Name:           name,
-				IsNew:          isNew,
+				UserId:    "",
+				TwitterId: twitterId,
+				Name:      name,
 			}
 			Db.Create(user)
 
