@@ -55,7 +55,7 @@ func migrateDB() {
 		&Session{},
 		&TempSession{},
 		&User{},
-		&AccessLog{},
+		&OperationLog{},
 	)
 	println("マイグレートを実行しました")
 

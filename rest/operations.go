@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	b64 "encoding/base64"
 	"encoding/json"
-	"errors"
+	"io/ioutil"
 	"math/big"
 	"net"
 	"net/http"
@@ -15,6 +15,7 @@ import (
 
 	common "reviewmakerback/common"
 	db "reviewmakerback/db"
+	"unicode/utf8"
 )
 
 // セッション取得に失敗した際のリトライ回数
@@ -62,8 +63,11 @@ func getReqTempSession(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, "一時接続用セッションの確立に失敗しました。しばらく時間を空けて再度実行してください。")
 	}
 
-	// ランダムな文字列を生成する
-	codeVerifer := common.MakeRandomChars(codeVeriferCnt)
+	// ランダムな文字列を生成する(IPアドレスを乱数のシードに含める)
+	codeVerifer, err := common.MakeRandomChars(codeVeriferCnt, requestIp)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, "一時接続用セッションの確立に失敗しました。しばらく時間を空けて再度実行してください。")
+	}
 
 	// 一時セッションのデータ作成
 	tempsession = db.TempSession{
@@ -134,23 +138,24 @@ func getReqSession(c echo.Context) error {
 	// 一時セッションの削除
 	db.Db.Where("session_id = ?", tempSessionId).Delete(&tempsession)
 
-	// セッションIDの作成
-	sessionId, err := makeSession(SessionRetryCount)
+	// セッションIDの作成(IPアドレスを乱数のシードに含める)
+	sessionId, err := db.MakeSession(SessionRetryCount, requestIp)
+
 	// Twitterからユーザー情報の取得
-	b, err := getTwitterApi("https://api.twitter.com/2/users/me", twitterToken.AccessToken)
+	b, err := getTwitterApi("https://api.twitter.com/2/users/me?user.fields=profile_image_url", twitterToken.AccessToken)
 	if err != nil {
-		return c.String(http.StatusForbidden, "Twitterからアクセストークンが取得できませんでした")
+		return c.String(http.StatusForbidden, "Twitterからユーザー情報が取得できませんでした")
 	}
 	var twitterUser TwitterUser
 	err = json.Unmarshal(b, &twitterUser)
 	if err != nil {
-		return c.String(http.StatusForbidden, "Twitterから取得したアクセストークンが不正です")
+		return c.String(http.StatusForbidden, "Twitterから取得したユーザー情報が不正です")
 	}
 
 	// Userデータの中に該当するTwitterIdがあるかチェック
 	var user db.User
 	tid := twitterUser.Data.Id
-	db.Db.Where("twitter_id = ?", tid).Find(&user).Count(&cnt)
+	db.Db.Where("twitter_name = ?", tid).Find(&user).Count(&cnt)
 	if cnt == 0 {
 		// アクセスログを登録
 		db.WriteAccessLog("twitter:"+tid, requestIp, accesstime, "login")
@@ -160,16 +165,20 @@ func getReqSession(c echo.Context) error {
 			SessionID:    sessionId,
 			UserId:       "",
 			ExpiredTime:  expiredTime,
-			TwitterToken: tid,
+			TwitterToken: twitterToken.AccessToken,
 			IsNew:        true,
 		}
 		db.Db.Create(session)
 
 		// レスポンスの内容を作成
 		res := Session{
-			SessionId:   sessionId,
-			ExpiredTime: expiredTime.Format("02-Jan-2006 15:04:05-07"),
-			IsNew:       true,
+			SessionId:       sessionId,
+			UserId:          "",
+			ExpiredTime:     expiredTime.Format("02-Jan-2006 15:04:05-07"),
+			IsNew:           true,
+			TwitterName:     twitterUser.Data.Name,
+			TwitterUserName: twitterUser.Data.UserName,
+			IconUrl:         twitterUser.Data.ProfileImageUrl,
 		}
 
 		return c.JSON(200, res)
@@ -182,15 +191,19 @@ func getReqSession(c echo.Context) error {
 			SessionID:    sessionId,
 			UserId:       user.UserId,
 			ExpiredTime:  expiredTime,
-			TwitterToken: tid,
+			TwitterToken: twitterToken.AccessToken,
 			IsNew:        false,
 		}
 
 		// レスポンスの内容を作成
 		res := Session{
-			SessionId:   sessionId,
-			ExpiredTime: expiredTime.Format("02-Jan-2006 15:04:05-07"),
-			IsNew:       false,
+			SessionId:       sessionId,
+			UserId:          user.UserId,
+			ExpiredTime:     expiredTime.Format("02-Jan-2006 15:04:05-07"),
+			IsNew:           false,
+			TwitterName:     twitterUser.Data.Name,
+			TwitterUserName: twitterUser.Data.UserName,
+			IconUrl:         twitterUser.Data.ProfileImageUrl,
 		}
 		db.Db.Create(session)
 
@@ -198,16 +211,93 @@ func getReqSession(c echo.Context) error {
 	}
 }
 
-func checkSession(c echo.Context) bool {
-	sessionId := c.Request().Header.Get("sessionId")
-	var session db.Session
-	var cnt int64
-	db.Db.Where("session_id = ?", sessionId).Find(&session).Count(&cnt)
-	return cnt == 1
+func postReqUser(c echo.Context) error {
+	// セッションの存在チェック
+	session, err := db.CheckSession(c)
+	if err != nil {
+		return c.String(404, "セッションがありません")
+	}
+
+	// Bodyの読み取り
+	b, err := ioutil.ReadAll(c.Request().Body)
+	var userData InitUserData
+	err = json.Unmarshal(b, &userData)
+	if err != nil {
+		return c.String(400, "不正なユーザーデータです")
+	}
+
+	// バリデーションチェック
+	if !userData.Accept {
+		return c.String(400, "利用規約への同意は必須です")
+	}
+	cnt := utf8.RuneCountInString(userData.Name)
+	if cnt < 1 || cnt > 64 {
+		return c.String(400, "名前が不正です")
+	}
+	cnt = utf8.RuneCountInString(userData.Profile)
+	if cnt > 200 {
+		return c.String(400, "プロフィールが不正です")
+	}
+
+	// Twitterからユーザー情報の取得
+	b, err = getTwitterApi("https://api.twitter.com/2/users/me?user.fields=profile_image_url", session.TwitterToken)
+	if err != nil {
+		return c.String(403, "Twitterからユーザー情報が取得できませんでした")
+	}
+	var twitterUser TwitterUser
+	err = json.Unmarshal(b, &twitterUser)
+	if err != nil {
+		return c.String(403, "Twitterから取得したユーザー情報が不正です")
+	}
+
+	uid, err := db.CreateUser(twitterUser.Data.Id, userData.Name, userData.Profile, twitterUser.Data.ProfileImageUrl)
+	if err != nil {
+		return c.String(400, "ユーザーの作成に失敗しました")
+	}
+
+	return c.JSON(200, NewUserData{
+		UserId:  uid,
+		Name:    userData.Name,
+		Profile: userData.Profile,
+		IconUrl: twitterUser.Data.ProfileImageUrl,
+	})
+}
+
+func updateReqUser(c echo.Context) error {
+
+	// リクエストのURIからIDを取得
+	requestId := c.Param("id")
+
+	// セッションの存在チェック
+	session, err := db.CheckSession(c)
+	if err != nil {
+		return c.String(404, "session not exists")
+	}
+
+	// リクエストのIDとセッションのIDを比較して、一致してなければエラー
+	if requestId != session.SessionID {
+		return c.String(403, "Unauthorized operation")
+	}
+
+	// Twitterからユーザー情報の取得
+	b, err := getTwitterApi("https://api.twitter.com/2/users/me?user.fields=profile_image_url", session.TwitterToken)
+	if err != nil {
+		return c.String(http.StatusForbidden, "Twitterからユーザー情報が取得できませんでした")
+	}
+	var twitterUser TwitterUser
+	err = json.Unmarshal(b, &twitterUser)
+	if err != nil {
+		return c.String(http.StatusForbidden, "Twitterから取得したユーザー情報が不正です")
+	}
+
+	// db.Db.Update()
+
+	return c.String(200, "")
 }
 
 func getReqCheckSession(c echo.Context) error {
-	if checkSession(c) {
+	_, err := db.CheckSession(c)
+	if err == nil {
 		return c.String(200, "session exists")
 	} else {
 		return c.String(404, "session not exists")
@@ -215,30 +305,47 @@ func getReqCheckSession(c echo.Context) error {
 }
 
 func delReqSession(c echo.Context) error {
-	if checkSession(c) {
+	_, err := db.CheckSession(c)
+	if err == nil {
 		sessionId := c.Request().Header.Get("sessionId")
 		var session db.Session
 		println(sessionId)
 		db.Db.Where("session_id = ?", sessionId).Delete(&session)
 		return c.String(200, "session deleted")
 	} else {
-		return c.String(404, "session not exists")
+		return c.String(205, "session not exists")
 	}
 }
 
-func makeSession(retryCount int) (string, error) {
-	var session db.Session
+func getReqUserData(c echo.Context) error {
+	// 送信元ユーザーと参照先ユーザーが同じかどうかチェック
+	session, err := db.CheckSession(c)
+	user := db.User{}
 	var cnt int64
-loop:
-	for i := 0; i < retryCount; i++ {
-		sessionId, err := common.MakeSession()
-		if err != nil {
-			continue loop
-		}
-		db.Db.Find(&session).Where("session_id = ?", sessionId).Count(&cnt)
-		if cnt == 0 {
-			return sessionId, nil
-		}
+
+	uid := c.Param("id")
+	println(uid)
+	db.Db.Where("user_id = ?", uid).Find(&user).Count(&cnt)
+
+	if cnt != 1 {
+		return c.JSON(404, "ユーザーが存在しません")
 	}
-	return "", errors.New("セッション作成に失敗")
+
+	res := UserData{
+		IsSelf:      false,
+		IconUrl:     user.IconUrl,
+		TwitterName: "",
+		Name:        user.Name,
+		Profile:     user.Profile,
+	}
+
+	if err == nil && uid == session.UserId {
+		// 送信元ユーザーと参照先ユーザーが同じ場合
+		res.IsSelf = true
+		res.TwitterName = user.TwitterName
+	} else {
+		// 送信元ユーザーと参照先ユーザーが異なる場合またはそもそもセッションが無い場合
+		res.IsSelf = false
+	}
+	return c.JSON(200, res)
 }

@@ -24,19 +24,19 @@ type Session struct {
 
 // ユーザーデータ
 type User struct {
-	UserId    string    `gorm:"primaryKey;not null"`      // ランダムで決定するユーザー固有のID
-	TwitterId string    `gorm:"index:unique;not null"`    // ユーザーのTwitterID
-	Name      string    `gorm:"not null;default:no name"` // 登録名
-	Profile   string    `gorm:"not null"`                 // 自己紹介文
-	IpAddress string    `gorm:"not null;default:0.0.0.0"` // セッション確立時のIPアドレス
-	CreatedAt time.Time `gorm:""`                         // 作成日
-	UpdatedAt time.Time `gorm:""`                         // 更新日
-	DeletedAt time.Time `gorm:"index"`                    // 削除日
+	UserId      string    `gorm:"primaryKey;not null"`       // ランダムで決定するユーザー固有のID
+	TwitterName string    `gorm:"index:unique;not null"`     // ユーザーのTwitterID
+	IconUrl     string    `gorm:"not null;default:no image"` // TwitterのアイコンURL
+	Name        string    `gorm:"not null;default:no name"`  // 登録名
+	Profile     string    `gorm:"not null"`                  // 自己紹介文
+	CreatedAt   time.Time `gorm:""`                          // 作成日
+	UpdatedAt   time.Time `gorm:""`                          // 更新日
+	DeletedAt   time.Time `gorm:"index"`                     // 削除日
 }
 
 // アクセスログ
 // 条件: ログイン、ログアウト、ユーザー登録・変更・削除、記事作成・編集・削除、コメント追加・編集・削除
-type AccessLog struct {
+type OperationLog struct {
 	UserId     string    `gorm:"not null"`                 // ユーザーデータの固有ID
 	IpAddress  string    `gorm:"not null;default:0.0.0.0"` // セッション確立時のIPアドレス
 	Operation  string    `gorm:"not null"`                 // 操作内容
