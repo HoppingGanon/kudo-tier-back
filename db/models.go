@@ -35,10 +35,43 @@ type User struct {
 }
 
 // アクセスログ
-// 条件: ログイン、ログアウト、ユーザー登録・変更・削除、記事作成・編集・削除、コメント追加・編集・削除
+// 条件: ログイン、ログアウト、ユーザー登録・変更・削除、Tier作成・編集・削除、レビュー作成・編集・削除
 type OperationLog struct {
 	UserId     string    `gorm:"not null"`                 // ユーザーデータの固有ID
 	IpAddress  string    `gorm:"not null;default:0.0.0.0"` // セッション確立時のIPアドレス
 	Operation  string    `gorm:"not null"`                 // 操作内容
 	AccessTime time.Time `gorm:"not null"`                 // ログを記録した時間
+}
+
+// Tier
+type Tier struct {
+	TierId       string        `gorm:"primaryKey;not null"` // Tier固有のID
+	UserId       string        `gorm:"not null"`            // 作成ユーザーの固有ID
+	Name         string        `gorm:"not null"`            // Tierの名称
+	ImageUrl     string        `gorm:""`                    // Tierカバー画像のURL
+	Prags        []Parag       `gorm:"not null"`            // 説明文
+	PointType    string        `gorm:"not null"`            // デフォルトのポイント表示形式
+	FactorParams []ReviewParam `gorm:"not null"`            // 評価のパラメータ
+	CreatedAt    time.Time     `gorm:""`                    // 作成日
+	UpdatedAt    time.Time     `gorm:""`                    // 更新日
+	DeletedAt    time.Time     `gorm:"index"`               // 削除日
+}
+
+// レビューの評価項目のデータ
+type ReviewFactor struct {
+	Info  string `gorm:""` // 情報
+	Point int    `gorm:""` // ポイント
+}
+
+// 評価項目のパラメータ
+type ReviewParam struct {
+	Name    string `gorm:"not null"` // パラメータの表示名
+	IsPoint bool   `gorm:"not null"` // ポイントかどうか
+	Weight  int    `gorm:"not null"` // 重み
+}
+
+// TierやReviewの説明文
+type Parag struct {
+	Type string `gorm:"not null"` // 説明文のタイプ
+	Body string `gorm:""`         // 本文
 }

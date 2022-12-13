@@ -11,4 +11,5 @@ func Route(e *echo.Echo) {
 	e.DELETE("/auth/session", delReqSession)
 	e.POST("/user", postReqUser)
 	e.GET("/user/:id", getReqUserData)
+	e.POST("/tier", postReqTier)
 }

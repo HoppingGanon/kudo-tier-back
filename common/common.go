@@ -27,8 +27,8 @@ func MakeRandomChars(codeCount int, seed string) (string, error) {
 		return "", errors.New("指定文字数で出力できません")
 	}
 
-	// 1兆通りのランダムな数字を生成する
-	max, _ := new(big.Int).SetString("1000000000000", 10)
+	// 1万通りのランダムな数字を生成する
+	max, _ := new(big.Int).SetString("10000", 10)
 	n, err := rand.Int(rand.Reader, max)
 	if err != nil {
 		return "", errors.New("乱数を生成できません")
@@ -36,7 +36,6 @@ func MakeRandomChars(codeCount int, seed string) (string, error) {
 
 	// seedと1兆通りのランダムな数字と生成時間を文字列結合して、SHA256でハッシュ文字列を指定数切り取り、それを出力する
 	chars := GetSHA256(seed + time.Now().Format("2006-01-02-15-04-05") + ":" + n.Text(10))
-	println(chars)
 	return chars[0:codeCount], nil
 }
 

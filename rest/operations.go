@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	b64 "encoding/base64"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"math/big"
 	"net"
@@ -17,9 +18,6 @@ import (
 	db "reviewmakerback/db"
 	"unicode/utf8"
 )
-
-// セッション取得に失敗した際のリトライ回数
-const SessionRetryCount = 4
 
 // 1つの発信元IPあたりの最大保持一時セッション数
 const maxSessionPerIp = 16
@@ -139,7 +137,11 @@ func getReqSession(c echo.Context) error {
 	db.Db.Where("session_id = ?", tempSessionId).Delete(&tempsession)
 
 	// セッションIDの作成(IPアドレスを乱数のシードに含める)
-	sessionId, err := db.MakeSession(SessionRetryCount, requestIp)
+	sessionId, err := db.MakeSession(requestIp)
+
+	if err != nil {
+		return c.String(http.StatusForbidden, "エラーが発生しました")
+	}
 
 	// Twitterからユーザー情報の取得
 	b, err := getTwitterApi("https://api.twitter.com/2/users/me?user.fields=profile_image_url", twitterToken.AccessToken)
@@ -215,7 +217,7 @@ func postReqUser(c echo.Context) error {
 	// セッションの存在チェック
 	session, err := db.CheckSession(c)
 	if err != nil {
-		return c.String(404, "セッションがありません")
+		return c.String(403, "セッションがありません")
 	}
 
 	// Bodyの読み取り
@@ -348,4 +350,59 @@ func getReqUserData(c echo.Context) error {
 		res.IsSelf = false
 	}
 	return c.JSON(200, res)
+}
+
+func ConvertParags(parags []ParagData) ([]db.Parag, error) {
+	size := len(parags)
+	var conved = make([]db.Parag, size)
+	for i := 0; i < size; i++ {
+		if !db.IsParagraphType(parags[i].Type) {
+			return []db.Parag{}, errors.New("Paragraphについて、Typeの値が異常です")
+		}
+		conved[i] = db.Parag{
+			Type: parags[i].Type,
+			Body: parags[i].Body,
+		}
+	}
+	return conved, nil
+}
+
+func ConvertParams(params []ReviewParamData) []db.ReviewParam {
+	size := len(params)
+	var conved = make([]db.ReviewParam, size)
+	for i := 0; i < size; i++ {
+		conved[i] = db.ReviewParam{
+			Name:    params[i].Name,
+			IsPoint: params[i].IsPoint,
+			Weight:  params[i].Weight,
+		}
+	}
+	return conved
+}
+
+func postReqTier(c echo.Context) error {
+	// セッションの存在チェック
+	session, err := db.CheckSession(c)
+	if err != nil {
+		return c.String(403, "セッションがありません")
+	}
+
+	// Bodyの読み取り
+	b, _ := ioutil.ReadAll(c.Request().Body)
+	var tierData TierPostData
+	err = json.Unmarshal(b, &tierData)
+	if err != nil {
+		return c.String(400, "不正なTierデータです1"+err.Error())
+	}
+
+	params := ConvertParams(tierData.ReviewFactorParams)
+
+	parags, err := ConvertParags(tierData.Parags)
+	if err != nil {
+		return c.String(400, "不正なTierデータです2")
+	}
+
+	db.CreateTier(session.SessionID, tierData.Name, tierData.ImageBase64, parags, tierData.PointType, params)
+
+	return c.String(201, "")
 }
