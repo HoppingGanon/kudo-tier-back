@@ -2,6 +2,8 @@ package db
 
 import (
 	"time"
+
+	"gorm.io/gorm"
 )
 
 // 一時セッション
@@ -24,54 +26,46 @@ type Session struct {
 
 // ユーザーデータ
 type User struct {
-	UserId      string    `gorm:"primaryKey;not null"`       // ランダムで決定するユーザー固有のID
-	TwitterName string    `gorm:"index:unique;not null"`     // ユーザーのTwitterID
-	IconUrl     string    `gorm:"not null;default:no image"` // TwitterのアイコンURL
-	Name        string    `gorm:"not null;default:no name"`  // 登録名
-	Profile     string    `gorm:"not null"`                  // 自己紹介文
-	CreatedAt   time.Time `gorm:""`                          // 作成日
-	UpdatedAt   time.Time `gorm:""`                          // 更新日
-	DeletedAt   time.Time `gorm:"index"`                     // 削除日
+	UserId      string         `gorm:"primaryKey;not null"`       // ランダムで決定するユーザー固有のID
+	TwitterName string         `gorm:"index:unique;not null"`     // ユーザーのTwitterID
+	IconUrl     string         `gorm:"not null;default:no image"` // TwitterのアイコンURL
+	Name        string         `gorm:"not null;default:no name"`  // 登録名
+	Profile     string         `gorm:"not null"`                  // 自己紹介文
+	CreatedAt   time.Time      `gorm:""`                          // 作成日
+	UpdatedAt   time.Time      `gorm:""`                          // 更新日
+	DeletedAt   gorm.DeletedAt `gorm:"index"`                     // 削除日
 }
 
 // アクセスログ
 // 条件: ログイン、ログアウト、ユーザー登録・変更・削除、Tier作成・編集・削除、レビュー作成・編集・削除
 type OperationLog struct {
-	UserId     string    `gorm:"not null"`                 // ユーザーデータの固有ID
-	IpAddress  string    `gorm:"not null;default:0.0.0.0"` // セッション確立時のIPアドレス
-	Operation  string    `gorm:"not null"`                 // 操作内容
-	AccessTime time.Time `gorm:"not null"`                 // ログを記録した時間
+	UserId    string    `gorm:"not null"`                 // ユーザーデータの固有ID
+	IpAddress string    `gorm:"not null;default:0.0.0.0"` // セッション確立時のIPアドレス
+	Operation string    `gorm:"not null"`                 // 操作内容
+	CreatedAt time.Time `gorm:"not null"`                 // 作成日
+}
+
+// エラーログ
+// 条件: 致命的なエラーの場合
+type ErrorLog struct {
+	UserId       string    `gorm:"not null"`                 // ユーザーデータの固有ID
+	IpAddress    string    `gorm:"not null;default:0.0.0.0"` // セッション確立時のIPアドレス
+	ErrorId      string    `gorm:"not null"`                 // エラーID
+	Operation    string    `gorm:"not null"`                 // 操作内容
+	Descriptions string    `gorm:"not null"`                 // 操作内容(詳細)
+	CreatedAt    time.Time `gorm:"not null"`                 // 作成日
 }
 
 // Tier
 type Tier struct {
-	TierId       string        `gorm:"primaryKey;not null"` // Tier固有のID
-	UserId       string        `gorm:"not null"`            // 作成ユーザーの固有ID
-	Name         string        `gorm:"not null"`            // Tierの名称
-	ImageUrl     string        `gorm:""`                    // Tierカバー画像のURL
-	Prags        []Parag       `gorm:"not null"`            // 説明文
-	PointType    string        `gorm:"not null"`            // デフォルトのポイント表示形式
-	FactorParams []ReviewParam `gorm:"not null"`            // 評価のパラメータ
-	CreatedAt    time.Time     `gorm:""`                    // 作成日
-	UpdatedAt    time.Time     `gorm:""`                    // 更新日
-	DeletedAt    time.Time     `gorm:"index"`               // 削除日
-}
-
-// レビューの評価項目のデータ
-type ReviewFactor struct {
-	Info  string `gorm:""` // 情報
-	Point int    `gorm:""` // ポイント
-}
-
-// 評価項目のパラメータ
-type ReviewParam struct {
-	Name    string `gorm:"not null"` // パラメータの表示名
-	IsPoint bool   `gorm:"not null"` // ポイントかどうか
-	Weight  int    `gorm:"not null"` // 重み
-}
-
-// TierやReviewの説明文
-type Parag struct {
-	Type string `gorm:"not null"` // 説明文のタイプ
-	Body string `gorm:""`         // 本文
+	TierId       string    `gorm:"primaryKey;not null"` // Tier固有のID
+	UserId       string    `gorm:"not null"`            // 作成ユーザーの固有ID
+	Name         string    `gorm:"not null"`            // Tierの名称
+	ImageUrl     string    `gorm:""`                    // Tierカバー画像のURL
+	Parags       string    `gorm:"not null"`            // 説明文
+	PointType    string    `gorm:"not null"`            // デフォルトのポイント表示形式
+	FactorParams string    `gorm:"not null"`            // 評価のパラメータ
+	CreatedAt    time.Time `gorm:""`                    // 作成日
+	UpdatedAt    time.Time `gorm:""`                    // 更新日
+	DeletedAt    time.Time `gorm:"index"`               // 削除日
 }

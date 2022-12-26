@@ -7,7 +7,7 @@ tmp_dir = "tmp"
 
 [build]
 # Ignore these filename extensions or directories.
-exclude_dir = ["assets", "tmp", "user_file"]
+exclude_dir = ["assets", "tmp", "userfile"]
 # This log file places in your tmp_dir.
 log = "air.log"
 # It's not necessary to trigger build each time file changes if it's too frequent.

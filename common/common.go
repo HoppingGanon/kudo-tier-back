@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"math/big"
+	"regexp"
 	"time"
 )
 
@@ -44,4 +45,12 @@ func MakeSession(seed string) (string, error) {
 	sessionId, err := MakeRandomChars(64, seed)
 
 	return sessionId, err
+}
+
+func DateToString(v time.Time) string {
+	return v.Format("02-Jan-2006 15:04:05-07")
+}
+
+func TestRegexp(reg, str string) bool {
+	return regexp.MustCompile(reg).Match([]byte(str))
 }

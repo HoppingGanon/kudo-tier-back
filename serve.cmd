@@ -1,4 +1,4 @@
 cd %~dp0
 title back
-air
+air -c .air.toml
 pause

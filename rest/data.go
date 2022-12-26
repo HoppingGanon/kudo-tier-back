@@ -1,5 +1,24 @@
 package rest
 
+type ErrorResponse struct {
+	/*
+		エラーコード
+			xxxx-nn[-ee]
+			xxxx 機能
+				gen0 一般的なエラー(セッションなど)
+				ses0 セッションエラー
+				vtir Tierのバリデーションエラー
+				ptir PostTiierのエラー
+				gtir GetTiierのエラー
+				grev GetReviewのエラー
+			nn 項目番号
+			ee エラー詳細番号(特に詳細がなければ省略)
+	*/
+	Code string `json:"code"`
+	// エラーメッセージ
+	Message string `json:"message"`
+}
+
 type TempSession struct {
 	SessionId     string `json:"sessionId"`
 	CodeChallenge string `json:"codeChallenge"`
@@ -54,21 +73,37 @@ type UserData struct {
 }
 
 type TierData struct {
-	TierId             bool   `json:"tierId"`
-	UserName           string `json:"userName"`
-	UserId             string `json:"userId"`
-	UserIconUrl        string `json:"userIconUrl"`
-	Name               string `json:"name"`
-	ImageUrl           string `json:"imageUrl"`
-	Parags             string `json:"parags"`
-	Reviews            string `json:"reviews"`
-	PointType          string `json:"pointType"`
-	ReviewFactorParams string `json:"reviewFactorParams"`
-	CreateAt           string `json:"createAt"`
-	UpdateAt           string `json:"updateAt"`
+	TierId             string            `json:"tierId"`
+	UserName           string            `json:"userName"`
+	UserId             string            `json:"userId"`
+	UserIconUrl        string            `json:"userIconUrl"`
+	Name               string            `json:"name"`
+	ImageUrl           string            `json:"imageUrl"`
+	Parags             []ParagData       `json:"parags"`
+	Reviews            []ReviewData      `json:"reviews"`
+	PointType          string            `json:"pointType"`
+	ReviewFactorParams []ReviewParamData `json:"reviewFactorParams"`
+	CreateAt           string            `json:"createAt"`
+	UpdatedAt          string            `json:"updateAt"`
 }
 
-type TierPostData struct {
+type ReviewData struct {
+	ReviewId      string             `json:"reviewId"`
+	UserName      string             `json:"userName"`
+	UserId        string             `json:"userId"`
+	UserIconUrl   string             `json:"userIconUrl"`
+	TierId        string             `json:"tierId"`
+	Title         string             `json:"title"`
+	Name          string             `json:"name"`
+	IconUrl       string             `json:"iconUrl"`
+	ReviewFactors []ReviewFactorData `json:"reviewFactors"`
+	PointType     string             `json:"pointType"`
+	Sections      []SectionData      `json:"sections"`
+	CreateAt      string             `json:"createAt"`
+	UpdateAt      string             `json:"updateAt"`
+}
+
+type TierEditingData struct {
 	TierId             string            `json:"tierId"`
 	Name               string            `json:"name"`
 	ImageBase64        string            `json:"imageBase64"`
@@ -86,6 +121,11 @@ type ReviewParamData struct {
 	Name    string `json:"name"`
 	IsPoint bool   `json:"isPoint"`
 	Weight  int    `json:"weight"`
+}
+
+type SectionData struct {
+	Title  string      `json:"title"`
+	Parags []ParagData `json:"parags"`
 }
 
 type ParagData struct {

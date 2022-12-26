@@ -49,13 +49,15 @@ func connectDB() *gorm.DB {
 	return Db
 }
 
-// データベースのテーブルを毎グレートする関数
+// データベースのテーブルをマイグレートする関数
 func migrateDB() {
 	Db.AutoMigrate(
 		&Session{},
 		&TempSession{},
 		&User{},
 		&OperationLog{},
+		&ErrorLog{},
+		&Tier{},
 	)
 	println("マイグレートを実行しました")
 

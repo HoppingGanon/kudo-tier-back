@@ -2,17 +2,12 @@ package db
 
 import (
 	"errors"
-	"image"
-	"os"
 	"time"
 
-	bytes "bytes"
-	b64 "encoding/base64"
-	"image/jpeg"
 	common "reviewmakerback/common"
 
 	"github.com/labstack/echo"
-	"github.com/nfnt/resize"
+	"gorm.io/gorm"
 )
 
 // ユーザー作成に失敗した際の再試行回数
@@ -21,32 +16,45 @@ const retryCreateCnt = 3
 // ユーザーIDの桁数
 const idSize = 16
 
-// tierの画像サイズの最大
-const tierImgMaxEdge = 1080
-
-// tierの画像サイズの最大(KB)
-const tierImgMaxBytes = 5000
-
-// tierの画像サイズの最大
-
-func WriteAccessLog(id string, ipAddress string, accessTime time.Time, operation string) {
+func WriteOperationLog(id string, ipAddress string, operation string) {
 	// ログを記録
 	log := OperationLog{
-		UserId:     id,
-		IpAddress:  ipAddress,
-		AccessTime: accessTime,
-		Operation:  operation,
+		UserId:    id,
+		IpAddress: ipAddress,
+		Operation: operation,
+		CreatedAt: time.Now(),
 	}
 
 	// データベースに登録
 	Db.Create(log)
 }
 
-func ExistsUserId(id string) bool {
-	var user User
-	var cnt int64
+func WriteErrorLog(id string, ipAddress string, errorId string, operation string, descriptions string) {
+	// ログを記録
+	log := ErrorLog{
+		UserId:       id,
+		IpAddress:    ipAddress,
+		ErrorId:      errorId,
+		Operation:    operation,
+		Descriptions: descriptions,
+		CreatedAt:    time.Now(),
+	}
 
-	Db.Find(&user).Where("user_id = ?", id).Count(&cnt)
+	// データベースに登録
+	Db.Create(log)
+}
+
+func GetUser(id string) (User, *gorm.DB) {
+	var user User
+
+	tx := Db.Find(&user).Where("user_id = ?", id)
+	return user, tx
+}
+
+func ExistsUser(id string) bool {
+	var cnt int64
+	_, tx := GetUser(id)
+	tx.Count(&cnt)
 	return cnt == 1
 }
 
@@ -71,7 +79,7 @@ func CreateUser(TwitterName string, name string, profile string, iconUrl string)
 		if err != nil {
 			return "", err
 		}
-		if !ExistsUserId(id) {
+		if !ExistsUser(id) {
 			user := User{
 				TwitterName: TwitterName,
 				UserId:      id,
@@ -79,7 +87,11 @@ func CreateUser(TwitterName string, name string, profile string, iconUrl string)
 				Profile:     profile,
 				IconUrl:     iconUrl,
 			}
-			Db.Create(&user)
+			tx := Db.Create(&user)
+
+			if err != nil {
+				return "", tx.Error
+			}
 
 			return id, nil
 		}
@@ -115,49 +127,25 @@ loop:
 	return "", errors.New("セッション作成に失敗")
 }
 
-func ExistsTier(tid string, uid string) bool {
+func GetTier(tid string, uid string) (Tier, *gorm.DB) {
 	var tier Tier
+
+	tx := Db.Where("tier_id = ? and user_id = ?", tid, uid).Find(&tier)
+	return tier, tx
+}
+
+func ExistsTier(tid string, uid string) bool {
 	var cnt int64
 
-	Db.Find(&tier).Where("tier_id = ? && user_id", tid, uid).Count(&cnt)
+	_, tx := GetTier(tid, uid)
+
+	tx.Count(&cnt)
 	return cnt == 1
 }
 
-func getTierId(userId string) (string, error) {
-	for i := 0; i < retryCreateCnt; i++ {
-		// ランダムな文字列を生成して、IDにする
-		id, err := common.MakeRandomChars(idSize, userId)
-		if err != nil {
-			return "", err
-		}
-		if !ExistsTier(id, userId) {
-			return id, nil
-		}
-	}
-	return "", errors.New("再試行の上限に達しました")
-}
-
-func CreateTier(
-	userId string,
-	name string,
-	imageBase64 string,
-	parags []Parag,
-	pointType string,
-	reviewFactorParams []ReviewParam,
-) (string, error) {
+func CreateTierId(userId string) (string, error) {
 	var id string
 	var err error
-
-	// PointTypeのチェック
-	if !IsPointType(pointType) {
-		return "", errors.New("ポイント表示方法が異常です")
-	}
-
-	// 画像が既定のサイズ以下であることを確認する
-	if len(imageBase64) < tierImgMaxBytes*1024*8/6 {
-		return "", errors.New("画像のサイズが大きすぎます")
-	}
-
 	for i := 0; i < retryCreateCnt; i++ {
 		// ランダムな文字列を生成して、IDにする
 		id, err = common.MakeRandomChars(idSize, userId)
@@ -165,71 +153,69 @@ func CreateTier(
 			return "", err
 		}
 		if !ExistsTier(id, userId) {
-			// Base64文字列をバイト列に変換する
-			byteAry, err := b64.StdEncoding.DecodeString(imageBase64)
-			if err != nil {
-				return "", err
-			}
-
-			// バイト列をReaderに変換
-			r := bytes.NewReader(byteAry)
-			img, _, err := image.Decode(r)
-
-			// 画像サイズを取得
-			w := img.Bounds().Dx()
-			h := img.Bounds().Dy()
-
-			if h < w {
-				// 幅の方が大きい
-				if tierImgMaxEdge < w {
-					w = tierImgMaxEdge
-					h = h * tierImgMaxEdge / w
-				}
-			} else {
-				// 高さの方が大きい
-				if tierImgMaxEdge < h {
-					w = w * tierImgMaxEdge / h
-					h = tierImgMaxEdge
-				}
-			}
-
-			resizedImg := resize.Resize(uint(w), uint(h), img, resize.NearestNeighbor)
-
-			err = os.MkdirAll(os.Getenv("AP_FILE_PATH")+"/"+userId+"/tier/"+id, os.ModePerm)
-			if err != nil {
-				return "", err
-			}
-
-			path := os.Getenv("AP_FILE_PATH") + "/" + userId + "/tier/" + id + "/icon.jpg"
-
-			out, err := os.Create(path)
-			if err != nil {
-				return "", err
-			}
-
-			opts := &jpeg.Options{
-				Quality: 92,
-			}
-
-			jpeg.Encode(out, resizedImg, opts)
-
-			if err != nil {
-				return "", err
-			}
-
-			tier := Tier{
-				TierId:       id,
-				UserId:       userId,
-				Name:         name,
-				ImageUrl:     path,
-				Prags:        parags,
-				PointType:    pointType,
-				FactorParams: reviewFactorParams,
-			}
-			Db.Create(&tier)
-
-			return id, nil
+			return id, err
 		}
 	}
-	return "", errors.New("Tier作成の試行回数が上限に達しました")
+	return "", err
+}
+
+func CreateTier(
+	userId string,
+	tierId string,
+	name string,
+	// 画像の保存パス、NULLなら変更しない
+	path string,
+	parags string,
+	pointType string,
+	reviewFactorParams string,
+) error {
+	var tier Tier
+	if path == "nochange" {
+		tier = Tier{
+			TierId:       tierId,
+			UserId:       userId,
+			Name:         name,
+			ImageUrl:     "",
+			Parags:       parags,
+			PointType:    pointType,
+			FactorParams: reviewFactorParams,
+		}
+	} else {
+		tier = Tier{
+			TierId:       tierId,
+			UserId:       userId,
+			Name:         name,
+			ImageUrl:     path,
+			Parags:       parags,
+			PointType:    pointType,
+			FactorParams: reviewFactorParams,
+		}
+	}
+	tx := Db.Create(&tier)
+	return tx.Error
+}
+
+func UpdateTier(
+	tier Tier,
+	userId string,
+	tierId string,
+	name string,
+	// 画像の保存パス、"nochange"なら変更しない
+	imageUrl string,
+	parags string,
+	pointType string,
+	factorParams string,
+) error {
+	var tx *gorm.DB
+	tier.TierId = tierId
+	tier.Name = name
+	tier.Parags = parags
+	tier.PointType = pointType
+	tier.FactorParams = factorParams
+	tier.UpdatedAt = time.Now()
+	if imageUrl != "nochange" {
+		tier.ImageUrl = imageUrl
+	}
+	tx = Db.Save(&tier)
+	return tx.Error
 }

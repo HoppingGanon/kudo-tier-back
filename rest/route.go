@@ -1,6 +1,8 @@
 package rest
 
 import (
+	"os"
+
 	"github.com/labstack/echo"
 )
 
@@ -12,4 +14,7 @@ func Route(e *echo.Echo) {
 	e.POST("/user", postReqUser)
 	e.GET("/user/:id", getReqUserData)
 	e.POST("/tier", postReqTier)
+	e.GET("/tier/:uid/:tid", getReqTier)
+	e.GET("/"+os.Getenv("AP_FILE_PATH")+"/:uid/:method/:id/:fname", getUserFile)
+	e.PATCH("/tier", updateReqTier)
 }
