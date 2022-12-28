@@ -280,7 +280,7 @@ func GetTiers(userId string, word string, sortType string, page int, pageSize in
 	"createdAtDesc",
 	"createdAtAsc",
 	*/
-	tx := Db.Debug()
+	tx := Db
 
 	if word == "" {
 		// 検索文字列指定無
