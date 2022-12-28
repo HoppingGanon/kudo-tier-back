@@ -7,6 +7,7 @@ import (
 	"os"
 	common "reviewmakerback/common"
 	db "reviewmakerback/db"
+	"strconv"
 
 	"github.com/labstack/echo"
 )
@@ -209,47 +210,91 @@ func getReqTier(c echo.Context) error {
 	user, tx := db.GetUser(uid)
 	tx.Count(&cnt)
 	if cnt != 1 {
-		return c.JSON(404, MakeError("gtir-002", "ユーザーが存在しません"))
+		return c.JSON(404, MakeError("gtir-001", "ユーザーが存在しません"))
 	}
 
 	tier, tx := db.GetTier(tid, uid)
 	tx.Count(&cnt)
 	if cnt != 1 {
-		return c.JSON(404, MakeError("gtir-001", "Tierが存在しません"))
+		return c.JSON(404, MakeError("gtir-002", "Tierが存在しません"))
+	}
+
+	tierData, er := makeTierData(tid, user, tier, "gtir-003")
+	if er != nil {
+		return c.JSON(400, er)
+	}
+	return c.JSON(200, tierData)
+}
+
+func makeTierData(tid string, user db.User, tier db.Tier, code string) (TierData, *ErrorResponse) {
+	imageUrl2 := ""
+	if tier.ImageUrl != "" {
+		imageUrl2 = os.Getenv("AP_BASE_URL") + "/" + tier.ImageUrl
 	}
 
 	var parags []ParagData
 	err := json.Unmarshal([]byte(tier.Parags), &parags)
 	if err != nil {
-		return c.JSON(400, MakeError("gtir-003", "説明文の取得に失敗しました"))
+		return TierData{}, MakeError(code+"-01", "説明文の取得に失敗しました")
 	}
 
 	var params []ReviewParamData
 	err = json.Unmarshal([]byte(tier.FactorParams), &params)
 	if err != nil {
-		return c.JSON(400, MakeError("gtir-004", "評価項目の取得に失敗しました"))
+		return TierData{}, MakeError(code+"-02", "評価項目の取得に失敗しました")
 	}
 
-	imageUrl := ""
-
-	if tier.ImageUrl != "" {
-		imageUrl = os.Getenv("AP_BASE_URL") + "/" + tier.ImageUrl
-	}
-
-	res := TierData{
+	return TierData{
 		TierId:             tid,
 		UserName:           user.Name,
 		UserId:             user.UserId,
 		UserIconUrl:        user.IconUrl,
 		Name:               tier.Name,
-		ImageUrl:           imageUrl,
+		ImageUrl:           imageUrl2,
 		Parags:             parags,
 		Reviews:            []ReviewData{},
 		PointType:          tier.PointType,
 		ReviewFactorParams: params,
 		CreateAt:           common.DateToString(tier.CreatedAt),
 		UpdatedAt:          common.DateToString(tier.UpdatedAt),
+	}, nil
+}
+
+func getReqTiers(c echo.Context) error {
+	userId := c.QueryParam("userid")
+	word := c.QueryParam("word")
+	sortType := c.QueryParam("sorttype")
+	page, err := strconv.Atoi(c.QueryParam("page"))
+
+	if err != nil {
+		return c.JSON(400, MakeError("gtrs-001", "ページ指定が異常です"))
+	} else if page < 0 {
+		return c.JSON(400, MakeError("gtrs-002", "ページ指定が異常です"))
 	}
 
-	return c.JSON(200, res)
+	if !IsTierSortType(sortType) {
+		return c.JSON(400, MakeError("gtrs-003", "ソートタイプが異常です"))
+	}
+
+	var cnt int64
+	user, tx := db.GetUser(userId)
+	tx.Count(&cnt)
+	if cnt != 1 {
+		return c.JSON(404, MakeError("gtrs-004", "指定されたユーザーは存在しません"))
+	}
+
+	var er *ErrorResponse
+	tiers, err := db.GetTiers(userId, word, sortType, page, tierPageSize)
+	if err != nil {
+		return c.JSON(400, MakeError("gtrs-005", "Tierが取得できません"))
+	}
+
+	tierDataList := make([]TierData, len(tiers))
+	for i, tier := range tiers {
+		tierDataList[i], er = makeTierData(tier.TierId, user, tier, "gtrs-006")
+		if er != nil {
+			c.JSON(400, *er)
+		}
+	}
+	return c.JSON(200, tierDataList)
 }

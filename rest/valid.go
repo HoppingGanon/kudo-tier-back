@@ -43,6 +43,9 @@ var tierValidation = TierValidation{
 	tierImgMaxBytes: 5000,
 }
 
+// 一度に取得可能なTier数
+const tierPageSize = 10
+
 type CommonError struct {
 	noSession      ErrorResponse
 	unreadableBody ErrorResponse
@@ -121,5 +124,14 @@ func IsParagraphType(v string) bool {
 		"text",
 		"twitterLink",
 		"imageLink",
+	})
+}
+
+func IsTierSortType(v string) bool {
+	return contains(v, []string{
+		"updatedAtDesc",
+		"updatedAtAsc",
+		"createdAtDesc",
+		"createdAtAsc",
 	})
 }

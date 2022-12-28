@@ -2,6 +2,7 @@ package db
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	common "reviewmakerback/common"
@@ -47,7 +48,7 @@ func WriteErrorLog(id string, ipAddress string, errorId string, operation string
 func GetUser(id string) (User, *gorm.DB) {
 	var user User
 
-	tx := Db.Find(&user).Where("user_id = ?", id)
+	tx := Db.First(&user).Where("user_id = ?", id)
 	return user, tx
 }
 
@@ -62,7 +63,7 @@ func ExistsUserTId(tid string) bool {
 	var user User
 	var cnt int64
 
-	Db.Find(&user).Where("twitter_name = ?", tid).Count(&cnt)
+	Db.First(&user).Where("twitter_name = ?", tid).Count(&cnt)
 	return cnt == 1
 }
 
@@ -119,7 +120,7 @@ loop:
 		if err != nil {
 			continue loop
 		}
-		Db.Find(&session).Where("session_id = ?", sessionId).Count(&cnt)
+		Db.Where("session_id = ?", sessionId).Find(&session).Count(&cnt)
 		if cnt == 0 {
 			return sessionId, nil
 		}
@@ -130,7 +131,7 @@ loop:
 func GetTier(tid string, uid string) (Tier, *gorm.DB) {
 	var tier Tier
 
-	tx := Db.Where("tier_id = ? and user_id = ?", tid, uid).Find(&tier)
+	tx := Db.Where("tier_id = ? and user_id = ?", tid, uid).First(&tier)
 	return tier, tx
 }
 
@@ -218,4 +219,88 @@ func UpdateTier(
 	}
 	tx = Db.Save(&tier)
 	return tx.Error
+}
+
+func WordToReg(word string) string {
+	word = strings.ReplaceAll(word, "\\", "")
+	word = strings.ReplaceAll(word, "'", "")
+	word = strings.ReplaceAll(word, "\"", "")
+	word = strings.ReplaceAll(word, "[", "")
+	word = strings.ReplaceAll(word, "]", "")
+	word = strings.ReplaceAll(word, "(", "")
+	word = strings.ReplaceAll(word, ")", "")
+	word = strings.ReplaceAll(word, "{", "")
+	word = strings.ReplaceAll(word, "}", "")
+	word = strings.ReplaceAll(word, "!", "")
+	word = strings.ReplaceAll(word, "?", "")
+	word = strings.ReplaceAll(word, "*", "")
+	word = strings.ReplaceAll(word, ".", "")
+	word = strings.ReplaceAll(word, "^", "")
+	word = strings.ReplaceAll(word, "$", "")
+	word = strings.ReplaceAll(word, "/", "")
+
+	word = strings.ReplaceAll(word, " ", ")|(")
+
+	return ".*[(" + word + ")].*"
+}
+
+func SearchWord(columns []string, word string) *gorm.DB {
+	word = strings.ReplaceAll(word, "\\", "")
+	word = strings.ReplaceAll(word, "'", "")
+	word = strings.ReplaceAll(word, "\"", "")
+	word = strings.ReplaceAll(word, "[", "")
+	word = strings.ReplaceAll(word, "]", "")
+	word = strings.ReplaceAll(word, "(", "")
+	word = strings.ReplaceAll(word, ")", "")
+	word = strings.ReplaceAll(word, "{", "")
+	word = strings.ReplaceAll(word, "}", "")
+	word = strings.ReplaceAll(word, "!", "")
+	word = strings.ReplaceAll(word, "?", "")
+	word = strings.ReplaceAll(word, "*", "")
+	word = strings.ReplaceAll(word, "/", "")
+	word = strings.ReplaceAll(word, "%", "")
+
+	var txAnd *gorm.DB
+	var txOr *gorm.DB
+	txAnd = Db
+	for _, like := range strings.Split(word, " ") {
+		txOr = Db
+		for _, column := range columns {
+			txOr = txOr.Or(column+" like ?", "%"+like+"%")
+		}
+		txAnd = txAnd.Where(txOr)
+	}
+	return txAnd
+}
+
+func GetTiers(userId string, word string, sortType string, page int, pageSize int) ([]Tier, error) {
+	/**
+	"updatedAtDesc",
+	"updatedAtAsc",
+	"createdAtDesc",
+	"createdAtAsc",
+	*/
+	tx := Db.Debug()
+
+	if word == "" {
+		// 検索文字列指定無
+		tx = tx.Where("user_id = ?", userId)
+	} else {
+		// 検索文字列指定有
+		tx = tx.Where("user_id = ?", userId).Where(SearchWord([]string{"name", "parags"}, word))
+	}
+	if sortType == "updatedAtDesc" {
+		tx = tx.Order("updated_at desc")
+	} else if sortType == "updatedAtAsc" {
+		tx = tx.Order("updated_at asc")
+	} else if sortType == "createdAtDesc" {
+		tx = tx.Order("created_at desc")
+	} else if sortType == "createdAtAsc" {
+		tx = tx.Order("created_at asc")
+	}
+
+	var tiers []Tier
+	tx.Offset(pageSize * (page - 1)).Limit(pageSize).Find(&tiers)
+
+	return tiers, nil
 }
