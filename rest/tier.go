@@ -244,6 +244,10 @@ func makeTierData(tid string, user db.User, tier db.Tier, code string) (TierData
 		return TierData{}, MakeError(code+"-02", "評価項目の取得に失敗しました")
 	}
 
+	for i := range params {
+		params[i].Index = i
+	}
+
 	return TierData{
 		TierId:             tid,
 		UserName:           user.Name,

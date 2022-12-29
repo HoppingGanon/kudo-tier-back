@@ -121,6 +121,7 @@ type ReviewParamData struct {
 	Name    string `json:"name"`
 	IsPoint bool   `json:"isPoint"`
 	Weight  int    `json:"weight"`
+	Index   int    `json:"index"`
 }
 
 type SectionData struct {

@@ -48,7 +48,7 @@ func WriteErrorLog(id string, ipAddress string, errorId string, operation string
 func GetUser(id string) (User, *gorm.DB) {
 	var user User
 
-	tx := Db.First(&user).Where("user_id = ?", id)
+	tx := Db.Where("user_id = ?", id).Find(&user)
 	return user, tx
 }
 
@@ -63,7 +63,7 @@ func ExistsUserTId(tid string) bool {
 	var user User
 	var cnt int64
 
-	Db.First(&user).Where("twitter_name = ?", tid).Count(&cnt)
+	Db.Where("twitter_name = ?", tid).First(&user).Count(&cnt)
 	return cnt == 1
 }
 
@@ -131,7 +131,7 @@ loop:
 func GetTier(tid string, uid string) (Tier, *gorm.DB) {
 	var tier Tier
 
-	tx := Db.Where("tier_id = ? and user_id = ?", tid, uid).First(&tier)
+	tx := Db.Where("tier_id = ? and user_id = ?", tid, uid).Find(&tier)
 	return tier, tx
 }
 
