@@ -83,6 +83,18 @@ func validTier(tierData TierEditingData) (bool, *ErrorResponse) {
 	return true, nil
 }
 
+func removeParamIndex(params []ReviewParamData) []ReviewParam {
+	list := make([]ReviewParam, len(params))
+	for i, v := range params {
+		list[i] = ReviewParam{
+			Name:    v.Name,
+			IsPoint: v.IsPoint,
+			Weight:  v.Weight,
+		}
+	}
+	return list
+}
+
 func postReqTier(c echo.Context) error {
 	// セッションの存在チェック
 	session, err := db.CheckSession(c)
@@ -105,7 +117,7 @@ func postReqTier(c echo.Context) error {
 		return c.JSON(400, e)
 	}
 
-	params, err := json.Marshal(tierData.ReviewFactorParams)
+	params, err := json.Marshal(removeParamIndex(tierData.ReviewFactorParams))
 	if err != nil {
 		return c.JSON(400, MakeError("ptir-001", "重みの登録に失敗しました"))
 	}

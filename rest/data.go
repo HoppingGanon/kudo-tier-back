@@ -124,6 +124,12 @@ type ReviewParamData struct {
 	Index   int    `json:"index"`
 }
 
+type ReviewParam struct {
+	Name    string `json:"name"`
+	IsPoint bool   `json:"isPoint"`
+	Weight  int    `json:"weight"`
+}
+
 type SectionData struct {
 	Title  string      `json:"title"`
 	Parags []ParagData `json:"parags"`
