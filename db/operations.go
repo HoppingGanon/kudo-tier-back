@@ -128,17 +128,33 @@ loop:
 	return "", errors.New("セッション作成に失敗")
 }
 
-func GetTier(tid string, uid string) (Tier, *gorm.DB) {
+func GetTier(tid string) (Tier, *gorm.DB) {
 	var tier Tier
 
-	tx := Db.Where("tier_id = ? and user_id = ?", tid, uid).Find(&tier)
+	tx := Db.Where("tier_id = ?", tid).Find(&tier)
 	return tier, tx
 }
 
-func ExistsTier(tid string, uid string) bool {
+func ExistsTier(tid string) bool {
 	var cnt int64
 
-	_, tx := GetTier(tid, uid)
+	_, tx := GetTier(tid)
+
+	tx.Count(&cnt)
+	return cnt == 1
+}
+
+func GetReview(rid string) (Review, *gorm.DB) {
+	var review Review
+
+	tx := Db.Where("review_id = ?", rid).Find(&review)
+	return review, tx
+}
+
+func ExistsReview(rid string) bool {
+	var cnt int64
+
+	_, tx := GetReview(rid)
 
 	tx.Count(&cnt)
 	return cnt == 1
@@ -153,7 +169,7 @@ func CreateTierId(userId string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		if !ExistsTier(id, userId) {
+		if !ExistsTier(id) {
 			return id, err
 		}
 	}
@@ -164,7 +180,7 @@ func CreateTier(
 	userId string,
 	tierId string,
 	name string,
-	// 画像の保存パス、NULLなら変更しない
+	// 画像の保存パス、"nochange"なら画像を保存しない
 	path string,
 	parags string,
 	pointType string,
@@ -219,6 +235,22 @@ func UpdateTier(
 	}
 	tx = Db.Save(&tier)
 	return tx.Error
+}
+
+func CreateReviewId(userId string, tierId string) (string, error) {
+	var id string
+	var err error
+	for i := 0; i < retryCreateCnt; i++ {
+		// ランダムな文字列を生成して、IDにする
+		id, err = common.MakeRandomChars(idSize, userId+tierId)
+		if err != nil {
+			return "", err
+		}
+		if !ExistsReview(id) {
+			return id, err
+		}
+	}
+	return "", err
 }
 
 func WordToReg(word string) string {
@@ -303,4 +335,43 @@ func GetTiers(userId string, word string, sortType string, page int, pageSize in
 	tx.Offset(pageSize * (page - 1)).Limit(pageSize).Find(&tiers)
 
 	return tiers, nil
+}
+
+func CreateReview(
+	userId string,
+	tierId string,
+	reviewId string,
+	name string,
+	title string,
+	// 画像の保存パス、"nochange"なら画像を保存しない
+	path string,
+	reviewFactors string,
+	sections string,
+) error {
+	var tier Review
+	if path == "nochange" {
+		tier = Review{
+			ReviewId:      reviewId,
+			UserId:        userId,
+			TierId:        tierId,
+			Title:         title,
+			Name:          name,
+			IconUrl:       "",
+			ReviewFactors: reviewFactors,
+			Sections:      sections,
+		}
+	} else {
+		tier = Review{
+			ReviewId:      reviewId,
+			UserId:        userId,
+			TierId:        tierId,
+			Title:         title,
+			Name:          name,
+			IconUrl:       path,
+			ReviewFactors: reviewFactors,
+			Sections:      sections,
+		}
+	}
+	tx := Db.Create(&tier)
+	return tx.Error
 }

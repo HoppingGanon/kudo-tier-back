@@ -16,7 +16,7 @@ import (
 func validTier(tierData TierEditingData) (bool, *ErrorResponse) {
 	// バリデーションチェック
 	// Name
-	f, e := validText("Tier名", "vtir-001", tierData.Name, true, -1, tierValidation.tierNameLenMax, "", "")
+	f, e := validText("Tier名", "vtir-001", tierData.Name, true, -1, tierValidation.nameLenMax, "", "")
 	if !f {
 		return f, e
 	}
@@ -29,17 +29,17 @@ func validTier(tierData TierEditingData) (bool, *ErrorResponse) {
 	for _, v := range tierData.Parags {
 		// タイプのチェック
 		if !IsParagraphType(v.Type) {
-			return false, MakeError("vtir-003-00", "説明文/リンクのタイプが異常です")
+			return false, MakeError("vtir-003", "説明文/リンクのタイプが異常です")
 		} else {
 			if v.Type == "text" {
 				// 説明文
-				f, e := validText("説明文", "vtir-004", v.Body, true, -1, tierValidation.paragTextLenMax, "", "")
+				f, e := validText("説明文", "vtir-004", v.Body, true, -1, sectionValidation.paragTextLenMax, "", "")
 				if !f {
 					return f, e
 				}
 			} else if v.Type == "twitterLink" {
 				// Twitterリンク
-				f, e := validText("Twitterリンク", "vtir-005", v.Body, true, -1, tierValidation.paragLinkLenMax, "", "")
+				f, e := validText("Twitterリンク", "vtir-005", v.Body, true, -1, sectionValidation.paragLinkLenMax, "", "")
 				if !f {
 					return f, e
 				}
@@ -54,7 +54,7 @@ func validTier(tierData TierEditingData) (bool, *ErrorResponse) {
 
 	// 画像が既定のサイズ以下であることを確認する
 	if tierData.ImageBase64 != "nochange" {
-		if len(tierData.ImageBase64) > tierValidation.tierImgMaxBytes*1024*8/6 {
+		if len(tierData.ImageBase64) > tierValidation.imgMaxBytes*1024*8/6 {
 			return false, MakeError("vtir-007", "画像のサイズが大きすぎます")
 		}
 	}
@@ -135,11 +135,12 @@ func postReqTier(c echo.Context) error {
 	// 画像データの名前を生成
 	code, err := common.MakeRandomChars(16, tierId)
 	if err != nil {
-		return c.JSON(400, MakeError("utir-007", "TierIDが生成出来ませんでした しばらく時間を開けて実行してください"))
+		return c.JSON(400, MakeError("utir-007", "Tierの画像保存に失敗しました しばらく時間を開けて実行してください"))
 	}
 	fname := "icon_" + code + ".jpg"
 
-	path, er := savePicture(session.UserId, "tier", tierId, fname, "", tierData.ImageBase64, "ptir-005")
+	// 画像の保存
+	path, er := savePicture(session.UserId, "tier", tierId, fname, "", tierData.ImageBase64, "ptir-005", tierValidation.imgMaxEdge, tierValidation.imgAspectRate, 80)
 	if err != nil {
 		return c.JSON(400, er)
 	}
@@ -149,6 +150,8 @@ func postReqTier(c echo.Context) error {
 		db.WriteErrorLog(session.UserId, requestIp, "ptir-006", "Tierの作成に失敗しました", err.Error())
 		return c.JSON(400, MakeError("ptir-006", "Tierの作成に失敗しました"))
 	}
+
+	db.WriteOperationLog(session.UserId, requestIp, "create tier("+tierId+")")
 	return c.String(201, tierId)
 }
 
@@ -171,7 +174,7 @@ func updateReqTier(c echo.Context) error {
 
 	// Tierのチェック
 	var cnt int64
-	tier, tx := db.GetTier(tierData.TierId, session.UserId)
+	tier, tx := db.GetTier(tierData.TierId)
 	tx.Count(&cnt)
 	if cnt != 1 {
 		return c.JSON(400, MakeError("utir-000", "該当するTierがありません"))
@@ -199,7 +202,7 @@ func updateReqTier(c echo.Context) error {
 	}
 	fname := "icon_" + code + ".jpg"
 
-	path, er := savePicture(session.UserId, "tier", tierData.TierId, fname, tier.ImageUrl, tierData.ImageBase64, "utir-005")
+	path, er := savePicture(session.UserId, "tier", tierData.TierId, fname, tier.ImageUrl, tierData.ImageBase64, "utir-005", tierValidation.imgMaxEdge, tierValidation.imgAspectRate, 80)
 	if er != nil {
 		return c.JSON(400, er)
 	}
@@ -210,6 +213,7 @@ func updateReqTier(c echo.Context) error {
 		return c.JSON(400, MakeError("utir-003", "Tierの作成に失敗しました"))
 	}
 
+	db.WriteOperationLog(session.UserId, requestIp, "update tier("+tierData.TierId+")")
 	return c.String(201, tierData.TierId)
 }
 
@@ -225,7 +229,7 @@ func getReqTier(c echo.Context) error {
 		return c.JSON(404, MakeError("gtir-001", "ユーザーが存在しません"))
 	}
 
-	tier, tx := db.GetTier(tid, uid)
+	tier, tx := db.GetTier(tid)
 	tx.Count(&cnt)
 	if cnt != 1 {
 		return c.JSON(404, MakeError("gtir-002", "Tierが存在しません"))

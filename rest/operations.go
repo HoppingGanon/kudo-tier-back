@@ -47,7 +47,7 @@ func getUserFile(c echo.Context) error {
 	return c.File(path)
 }
 
-func savePicture(userId string, data string, id string, fname string, delpath string, imageBase64 string, errorCode string) (string, *ErrorResponse) {
+func savePicture(userId string, data string, id string, fname string, delpath string, imageBase64 string, errorCode string, imgMaxEdge int, aspectRate float32, quality int) (string, *ErrorResponse) {
 	path := ""
 	// Base64文字列をバイト列に変換する
 	if imageBase64 == "nochange" {
@@ -76,7 +76,15 @@ func savePicture(userId string, data string, id string, fname string, delpath st
 			return path, MakeError(errorCode+"-01", "画像の登録に失敗しました")
 		}
 
-		resizedImg := resize.Thumbnail(uint(tierImgMaxEdge), uint(tierImgMaxEdge), img, resize.NearestNeighbor)
+		x := img.Bounds().Dx()
+		y := img.Bounds().Dy()
+
+		// (画像のアスペクト比 / 既定のアスペクト比) がプラスマイナスaspectRateAmpになってるか確認
+		if ((float32(x)/float32(y))/aspectRate)-(1.0-aspectRateAmp) > aspectRateAmp*2 {
+			return path, MakeError(errorCode+"-07", "画像のアスペクト比が異常です")
+		}
+
+		resizedImg := resize.Thumbnail(uint(imgMaxEdge), uint(imgMaxEdge), img, resize.NearestNeighbor)
 		err = os.MkdirAll(os.Getenv("AP_FILE_PATH")+"/"+userId+"/"+data+"/"+id, os.ModePerm)
 		if err != nil {
 			return path, MakeError(errorCode+"-02", "画像の登録に失敗しました")
@@ -91,7 +99,7 @@ func savePicture(userId string, data string, id string, fname string, delpath st
 		}
 
 		opts := &jpeg.Options{
-			Quality: 92,
+			Quality: quality,
 		}
 
 		// ファイル削除

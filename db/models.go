@@ -2,8 +2,6 @@ package db
 
 import (
 	"time"
-
-	"gorm.io/gorm"
 )
 
 // 一時セッション
@@ -26,14 +24,13 @@ type Session struct {
 
 // ユーザーデータ
 type User struct {
-	UserId      string         `gorm:"primaryKey;not null"`       // ランダムで決定するユーザー固有のID
-	TwitterName string         `gorm:"index:unique;not null"`     // ユーザーのTwitterID
-	IconUrl     string         `gorm:"not null;default:no image"` // TwitterのアイコンURL
-	Name        string         `gorm:"not null;default:no name"`  // 登録名
-	Profile     string         `gorm:"not null"`                  // 自己紹介文
-	CreatedAt   time.Time      `gorm:""`                          // 作成日
-	UpdatedAt   time.Time      `gorm:""`                          // 更新日
-	DeletedAt   gorm.DeletedAt `gorm:"index"`                     // 削除日
+	UserId      string    `gorm:"primaryKey;not null"`       // ランダムで決定するユーザー固有のID
+	TwitterName string    `gorm:"index:unique;not null"`     // ユーザーのTwitterID
+	IconUrl     string    `gorm:"not null;default:no image"` // TwitterのアイコンURL
+	Name        string    `gorm:"not null;default:no name"`  // 登録名
+	Profile     string    `gorm:"not null"`                  // 自己紹介文
+	CreatedAt   time.Time `gorm:""`                          // 作成日
+	UpdatedAt   time.Time `gorm:""`                          // 更新日
 }
 
 // アクセスログ
@@ -59,13 +56,26 @@ type ErrorLog struct {
 // Tier
 type Tier struct {
 	TierId       string    `gorm:"primaryKey;not null"` // Tier固有のID
-	UserId       string    `gorm:"not null"`            // 作成ユーザーの固有ID
+	UserId       string    `gorm:"not null;index"`      // 作成ユーザーの固有ID
 	Name         string    `gorm:"not null"`            // Tierの名称
-	ImageUrl     string    `gorm:""`                    // Tierカバー画像のURL
+	ImageUrl     string    `gorm:"not null"`            // Tierカバー画像のURL
 	Parags       string    `gorm:"not null"`            // 説明文
 	PointType    string    `gorm:"not null"`            // デフォルトのポイント表示形式
 	FactorParams string    `gorm:"not null"`            // 評価のパラメータ
 	CreatedAt    time.Time `gorm:""`                    // 作成日
 	UpdatedAt    time.Time `gorm:""`                    // 更新日
-	DeletedAt    time.Time `gorm:"index"`               // 削除日
+}
+
+// Review
+type Review struct {
+	ReviewId      string    `gorm:"primaryKey;not null"` // レビュー固有のID
+	UserId        string    `gorm:"primaryKey;not null"` // 作成ユーザーの固有ID
+	TierId        string    `gorm:"not null"`            // 作成元Tierの固有ID
+	Title         string    `gorm:"not null"`            // レビューのタイトル
+	Name          string    `gorm:"not null"`            // レビューの名前
+	IconUrl       string    `gorm:"not null"`            // レビューアイコンのURL
+	ReviewFactors string    `gorm:"not null"`            // レビューの評価要素
+	Sections      string    `gorm:"not null"`            // レビュー説明セクション
+	CreateAt      time.Time `gorm:""`                    // 作成日
+	UpdateAt      time.Time `gorm:""`                    // 更新日
 }

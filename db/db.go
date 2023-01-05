@@ -58,6 +58,7 @@ func migrateDB() {
 		&OperationLog{},
 		&ErrorLog{},
 		&Tier{},
+		&Review{},
 	)
 	println("マイグレートを実行しました")
 

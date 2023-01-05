@@ -12,39 +12,85 @@ const maxSessionPerIp = 16
 // codeVeriferの文字数
 const codeVeriferCnt = 64
 
-// tierの画像サイズの最大
-const tierImgMaxEdge = 1080
-
 type TierValidation struct {
 	// tier名の最大文字数最大
-	tierNameLenMax int
-	// 説明文やリンクの合計数の上限
-	paragsLenMax int
-	// 説明文の文字数の上限
-	paragTextLenMax int
-	// リンクの文字数の長さの上限
-	paragLinkLenMax int
+	nameLenMax int
 	// 評価項目の合計数の上限
 	paramsLenMax int
 	// 評価項目名の文字数の上限
 	paramNameLenMax int
 	// tierの画像サイズの最大(KB)
-	tierImgMaxBytes int
+	imgMaxBytes int
+	// tierの画像サイズの一辺最大
+	imgMaxEdge int
+	// 画像のアスペクト比
+	imgAspectRate float32
 }
 
 // Tierに関するバリデーション
 var tierValidation = TierValidation{
-	tierNameLenMax:  100,
-	paragsLenMax:    16,
-	paragTextLenMax: 400,
-	paragLinkLenMax: 100,
+	nameLenMax:      100,
 	paramsLenMax:    16,
 	paramNameLenMax: 16,
-	tierImgMaxBytes: 5000,
+	imgMaxBytes:     5000,
+	imgMaxEdge:      1080,
+	imgAspectRate:   10.0 / 3.0,
+}
+
+type SectionValidation struct {
+	// セクションタイトルの最大文字数
+	sectionTitleLen int
+	// 説明文の文字数の上限
+	paragTextLenMax int
+	// セクション中に存在できるパラグラフ最大数
+	paragsLenMax int
+	// リンクの文字数の長さの上限
+	paragLinkLenMax int
+}
+
+var sectionValidation = SectionValidation{
+	sectionTitleLen: 100,
+	paragTextLenMax: 16,
+	paragsLenMax:    400,
+	paragLinkLenMax: 100,
 }
 
 // 一度に取得可能なTier数
 const tierPageSize = 10
+
+// リンクの文字数の長さの上限
+const paragLinkLenMax = 100
+
+// アスペクト比の振れ幅
+const aspectRateAmp = 0.1
+
+type ReviewValidation struct {
+	// tier名の最大文字数
+	nameLenMax int
+	// Tierタイトルの最大文字数
+	titleLenMax int
+	// セクションの最大数
+	sectionLenMax int
+	// 評価情報の文字数の上限
+	factorInfoLenMax int
+	// レビューアイコンサイズの最大(KB)
+	iconMaxBytes int
+	// レビューアイコンサイズの一辺最大
+	iconMaxEdge int
+	// 画像のアスペクト比
+	iconAspectRate float32
+}
+
+// レビューに関するバリデーション
+var reviewValidation = ReviewValidation{
+	nameLenMax:       50,
+	titleLenMax:      100,
+	sectionLenMax:    8,
+	factorInfoLenMax: 16,
+	iconMaxBytes:     1000,
+	iconMaxEdge:      1080,
+	iconAspectRate:   1.0,
+}
 
 type CommonError struct {
 	noSession      ErrorResponse
@@ -117,6 +163,29 @@ func IsPointType(v string) bool {
 		"point",
 		"unlimited",
 	})
+}
+
+func validParagraphs(parags []ParagData) (bool, *ErrorResponse) {
+	for _, parag := range parags {
+		if !IsParagraphType(parag.Type) {
+			return false, MakeError("vpgs-01", "説明文/リンクのタイプが異常です")
+		} else {
+			if parag.Type == "text" {
+				f, e := validText("説明文", "vpgs-02", parag.Body, false, -1, sectionValidation.paragTextLenMax, "", "")
+				if !f {
+					return false, e
+				}
+			} else if parag.Type == "twitterLink" {
+				f, e := validText("Twitterリンク", "vpgs-03", parag.Body, false, -1, paragLinkLenMax, "", "")
+				if !f {
+					return false, e
+				}
+			} else if parag.Type == "imageLink" {
+
+			}
+		}
+	}
+	return true, nil
 }
 
 func IsParagraphType(v string) bool {

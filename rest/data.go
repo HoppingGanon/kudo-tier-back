@@ -112,6 +112,16 @@ type TierEditingData struct {
 	ReviewFactorParams []ReviewParamData `json:"reviewFactorParams"`
 }
 
+type ReviewEditingData struct {
+	TierId        string             `json:"tierId"`
+	ReviewId      string             `json:"reviewId"`
+	Title         string             `json:"title"`
+	Name          string             `json:"name"`
+	IconBase64    string             `json:"iconBase64"`
+	ReviewFactors []ReviewFactorData `json:"reviewFactors"`
+	Sections      []SectionData      `json:"sections"`
+}
+
 type ReviewFactorData struct {
 	Info  string `json:"info"`
 	Point int    `json:"point"`
