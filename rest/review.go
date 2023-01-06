@@ -115,7 +115,7 @@ func postReqReview(c echo.Context) error {
 		return c.JSON(400, commonError.unreadableBody)
 	}
 
-	tier, tx := db.GetTier(reviewData.TierId)
+	tier, tx := db.GetTier(reviewData.TierId, "tier_id, factor_params")
 	if tx.Error != nil {
 		return c.JSON(400, MakeError("prev-000", "レビューに対応するTierが存在しません"))
 	}
@@ -209,28 +209,37 @@ func getReqReview(c echo.Context) error {
 
 	var cnt int64
 
-	review, tx := db.GetReview(rid)
+	review, tx := db.GetReview(rid, "*")
 	tx.Count(&cnt)
 	if cnt != 1 {
-		return c.JSON(404, MakeError("grev-02", "レビューが存在しません"))
+		return c.JSON(404, MakeError("grev-002", "レビューが存在しません"))
 	}
 
 	user, tx := db.GetUser(review.UserId)
 	tx.Count(&cnt)
 	if cnt != 1 {
-		return c.JSON(404, MakeError("grev-01", "ユーザーが存在しません"))
+		return c.JSON(404, MakeError("grev-001", "ユーザーが存在しません"))
 	}
 
-	tier, tx := db.GetTier(review.TierId)
+	tier, tx := db.GetTier(review.TierId, "point_type, factor_params")
 	tx.Count(&cnt)
 	if cnt != 1 {
-		return c.JSON(404, MakeError("grev-03", "レビューに紐づいたTier情報の取得に失敗しました"))
+		return c.JSON(404, MakeError("grev-003", "レビューに紐づいたTier情報の取得に失敗しました"))
 	}
 
-	reviewData, er := makeReviewData(rid, user, review, tier, "gtir-003")
+	var params []ReviewParamData
+	err := json.Unmarshal([]byte(tier.FactorParams), &params)
+	if err != nil {
+		return c.JSON(404, MakeError("grev-004", "評価項目の取得に失敗しました"))
+	}
+
+	reviewData, er := makeReviewData(rid, user, review, tier, "grev-005")
 	if er != nil {
 		return c.JSON(400, er)
 	}
-	return c.JSON(200, reviewData)
+	return c.JSON(200, ReviewDataWithParams{
+		Review: reviewData,
+		Params: params,
+	})
 
 }

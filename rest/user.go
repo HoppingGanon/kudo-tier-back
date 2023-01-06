@@ -117,7 +117,7 @@ func getReqUserData(c echo.Context) error {
 	db.Db.Where("user_id = ?", uid).Find(&user).Count(&cnt)
 
 	if cnt != 1 {
-		return c.JSON(404, MakeError("gusr-01", "ユーザーが存在しません"))
+		return c.JSON(404, MakeError("gusr-001", "ユーザーが存在しません"))
 	}
 
 	res := UserData{

@@ -112,15 +112,15 @@ func IsPointType(v string) bool {
 func validParagraphs(parags []ParagData) (bool, *ErrorResponse) {
 	for _, parag := range parags {
 		if !IsParagraphType(parag.Type) {
-			return false, MakeError("vpgs-01", "説明文/リンクのタイプが異常です")
+			return false, MakeError("vpgs-001", "説明文/リンクのタイプが異常です")
 		} else {
 			if parag.Type == "text" {
-				f, e := validText("説明文", "vpgs-02", parag.Body, false, -1, sectionValidation.paragTextLenMax, "", "")
+				f, e := validText("説明文", "vpgs-002", parag.Body, false, -1, sectionValidation.paragTextLenMax, "", "")
 				if !f {
 					return false, e
 				}
 			} else if parag.Type == "twitterLink" {
-				f, e := validText("Twitterリンク", "vpgs-03", parag.Body, false, -1, paragLinkLenMax, "", "")
+				f, e := validText("Twitterリンク", "vpgs-003", parag.Body, false, -1, paragLinkLenMax, "", "")
 				if !f {
 					return false, e
 				}

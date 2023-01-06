@@ -6,17 +6,17 @@ import (
 	"gorm.io/gorm"
 )
 
-func GetReview(rid string) (Review, *gorm.DB) {
+func GetReview(rid string, selectText string) (Review, *gorm.DB) {
 	var review Review
 
-	tx := Db.Where("review_id = ?", rid).Find(&review)
+	tx := Db.Select(selectText).Where("review_id = ?", rid).Find(&review)
 	return review, tx
 }
 
 func ExistsReview(rid string) bool {
 	var cnt int64
 
-	_, tx := GetReview(rid)
+	_, tx := GetReview(rid, "review_id")
 
 	tx.Count(&cnt)
 	return cnt == 1

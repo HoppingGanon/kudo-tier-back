@@ -8,17 +8,17 @@ import (
 	"gorm.io/gorm"
 )
 
-func GetTier(tid string) (Tier, *gorm.DB) {
+func GetTier(tid string, selectText string) (Tier, *gorm.DB) {
 	var tier Tier
 
-	tx := Db.Where("tier_id = ?", tid).Find(&tier)
+	tx := Db.Select(selectText).Where("tier_id = ?", tid).Find(&tier)
 	return tier, tx
 }
 
 func ExistsTier(tid string) bool {
 	var cnt int64
 
-	_, tx := GetTier(tid)
+	_, tx := GetTier(tid, "tier_id")
 
 	tx.Count(&cnt)
 	return cnt == 1

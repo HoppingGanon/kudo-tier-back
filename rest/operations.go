@@ -27,19 +27,19 @@ func getUserFile(c echo.Context) error {
 	// 不正なファイル名へのアクセスを防ぐ
 	if !common.TestRegexp(`^[a-zA-Z0-9]*$`, userId) {
 		// ユーザーID
-		return c.JSON(http.StatusBadRequest, MakeError("gen0-00", "不正なディレクトリが指定されました"))
+		return c.JSON(http.StatusBadRequest, MakeError("gen0-000", "不正なディレクトリが指定されました"))
 	}
 	if !contains(data, []string{"tier", "review", "user"}) {
 		// データ(機能種別)
-		return c.JSON(http.StatusBadRequest, MakeError("gen0-01", "不正なディレクトリが指定されました"))
+		return c.JSON(http.StatusBadRequest, MakeError("gen0-001", "不正なディレクトリが指定されました"))
 	}
 	if !common.TestRegexp(`^[a-zA-Z0-9]*$`, id) {
 		// ID
-		return c.JSON(http.StatusBadRequest, MakeError("gen0-02", "不正なディレクトリが指定されました"))
+		return c.JSON(http.StatusBadRequest, MakeError("gen0-002", "不正なディレクトリが指定されました"))
 	}
 	if !common.TestRegexp(`^[a-zA-Z0-9/._]*$`, fname) {
 		// ファイル名
-		return c.JSON(http.StatusBadRequest, MakeError("gen0-03", "不正なファイルが指定されました"))
+		return c.JSON(http.StatusBadRequest, MakeError("gen0-003", "不正なファイルが指定されました"))
 	}
 
 	path := os.Getenv("AP_FILE_PATH") + "/" + userId + "/" + data + "/" + id + "/" + fname

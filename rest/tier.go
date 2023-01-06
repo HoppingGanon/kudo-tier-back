@@ -150,33 +150,44 @@ func postReqTier(c echo.Context) error {
 		return c.JSON(400, MakeError("ptir-001", "重みの登録に失敗しました"))
 	}
 
+	var params2 []ReviewParam
+	err = json.Unmarshal([]byte(params), &params2)
+	if err != nil {
+		return c.JSON(400, MakeError("ptir-002", "重みの登録に失敗しました"))
+	}
+
+	params3, err := json.Marshal(params2)
+	if err != nil {
+		return c.JSON(400, MakeError("ptir-003", "重みの登録に失敗しました"))
+	}
+
 	parags, err := json.Marshal(tierData.Parags)
 	if err != nil {
-		return c.JSON(400, MakeError("ptir-002", "説明文の登録に失敗しました"))
+		return c.JSON(400, MakeError("ptir-004", "説明文の登録に失敗しました"))
 	}
 
 	tierId, err := db.CreateTierId(session.UserId)
 	if err != nil {
-		return c.JSON(400, MakeError("utir-003", "TierIDが生成出来ませんでした しばらく時間を開けて実行してください"))
+		return c.JSON(400, MakeError("ptir-005", "TierIDが生成出来ませんでした しばらく時間を開けて実行してください"))
 	}
 
 	// 画像データの名前を生成
 	code, err := common.MakeRandomChars(16, tierId)
 	if err != nil {
-		return c.JSON(400, MakeError("utir-007", "Tierの画像保存に失敗しました しばらく時間を開けて実行してください"))
+		return c.JSON(400, MakeError("ptir-006", "Tierの画像保存に失敗しました しばらく時間を開けて実行してください"))
 	}
 	fname := "icon_" + code + ".jpg"
 
 	// 画像の保存
-	path, er := savePicture(session.UserId, "tier", tierId, fname, "", tierData.ImageBase64, "ptir-005", tierValidation.imgMaxEdge, tierValidation.imgAspectRate, 80)
+	path, er := savePicture(session.UserId, "tier", tierId, fname, "", tierData.ImageBase64, "ptir-007", tierValidation.imgMaxEdge, tierValidation.imgAspectRate, 80)
 	if err != nil {
 		return c.JSON(400, er)
 	}
 
-	err = db.CreateTier(session.UserId, tierId, tierData.Name, path, string(parags), tierData.PointType, string(params))
+	err = db.CreateTier(session.UserId, tierId, tierData.Name, path, string(parags), tierData.PointType, string(params3))
 	if err != nil {
-		db.WriteErrorLog(session.UserId, requestIp, "ptir-006", "Tierの作成に失敗しました", err.Error())
-		return c.JSON(400, MakeError("ptir-006", "Tierの作成に失敗しました"))
+		db.WriteErrorLog(session.UserId, requestIp, "ptir-008", "Tierの作成に失敗しました", err.Error())
+		return c.JSON(400, MakeError("ptir-008", "Tierの作成に失敗しました"))
 	}
 
 	db.WriteOperationLog(session.UserId, requestIp, "create tier("+tierId+")")
@@ -202,7 +213,7 @@ func updateReqTier(c echo.Context) error {
 
 	// Tierのチェック
 	var cnt int64
-	tier, tx := db.GetTier(tierData.TierId)
+	tier, tx := db.GetTier(tierData.TierId, "*")
 	tx.Count(&cnt)
 	if cnt != 1 {
 		return c.JSON(400, MakeError("utir-000", "該当するTierがありません"))
@@ -218,27 +229,38 @@ func updateReqTier(c echo.Context) error {
 		return c.JSON(400, MakeError("utir-001", "重みの登録に失敗しました"))
 	}
 
+	var params2 []ReviewParam
+	err = json.Unmarshal([]byte(params), &params2)
+	if err != nil {
+		return c.JSON(400, MakeError("utir-002", "重みの登録に失敗しました"))
+	}
+
+	params3, err := json.Marshal(params2)
+	if err != nil {
+		return c.JSON(400, MakeError("utir-003", "重みの登録に失敗しました"))
+	}
+
 	parags, err := json.Marshal(tierData.Parags)
 	if err != nil {
-		return c.JSON(400, MakeError("utir-002", "説明文の登録に失敗しました"))
+		return c.JSON(400, MakeError("utir-004", "説明文の登録に失敗しました"))
 	}
 
 	// 画像データの名前を生成
 	code, err := common.MakeRandomChars(16, tierData.TierId)
 	if err != nil {
-		return c.JSON(400, MakeError("utir-004", "TierIDが生成出来ませんでした しばらく時間を開けて実行してください"))
+		return c.JSON(400, MakeError("utir-005", "TierIDが生成出来ませんでした しばらく時間を開けて実行してください"))
 	}
 	fname := "icon_" + code + ".jpg"
 
-	path, er := savePicture(session.UserId, "tier", tierData.TierId, fname, tier.ImageUrl, tierData.ImageBase64, "utir-005", tierValidation.imgMaxEdge, tierValidation.imgAspectRate, 80)
+	path, er := savePicture(session.UserId, "tier", tierData.TierId, fname, tier.ImageUrl, tierData.ImageBase64, "utir-006", tierValidation.imgMaxEdge, tierValidation.imgAspectRate, 80)
 	if er != nil {
 		return c.JSON(400, er)
 	}
 
-	err = db.UpdateTier(tier, session.UserId, tierData.TierId, tierData.Name, path, string(parags), tierData.PointType, string(params))
+	err = db.UpdateTier(tier, session.UserId, tierData.TierId, tierData.Name, path, string(parags), tierData.PointType, string(params3))
 	if err != nil {
-		db.WriteErrorLog(session.UserId, requestIp, "utir-003", "Tierの作成に失敗しました", err.Error())
-		return c.JSON(400, MakeError("utir-003", "Tierの作成に失敗しました"))
+		db.WriteErrorLog(session.UserId, requestIp, "utir-007", "Tierの作成に失敗しました", err.Error())
+		return c.JSON(400, MakeError("utir-007", "Tierの作成に失敗しました"))
 	}
 
 	db.WriteOperationLog(session.UserId, requestIp, "update tier("+tierData.TierId+")")
@@ -250,7 +272,7 @@ func getReqTier(c echo.Context) error {
 
 	var cnt int64
 
-	tier, tx := db.GetTier(tid)
+	tier, tx := db.GetTier(tid, "*")
 	tx.Count(&cnt)
 	if cnt != 1 {
 		return c.JSON(404, MakeError("gtir-002", "Tierが存在しません"))

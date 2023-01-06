@@ -103,6 +103,11 @@ type ReviewData struct {
 	UpdatedAt     string             `json:"updatedAt"`
 }
 
+type ReviewDataWithParams struct {
+	Review ReviewData        `json:"review"`
+	Params []ReviewParamData `json:"params"`
+}
+
 type TierEditingData struct {
 	TierId             string            `json:"tierId"`
 	Name               string            `json:"name"`
