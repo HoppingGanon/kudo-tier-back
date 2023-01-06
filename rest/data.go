@@ -83,8 +83,8 @@ type TierData struct {
 	Reviews            []ReviewData      `json:"reviews"`
 	PointType          string            `json:"pointType"`
 	ReviewFactorParams []ReviewParamData `json:"reviewFactorParams"`
-	CreateAt           string            `json:"createAt"`
-	UpdatedAt          string            `json:"updateAt"`
+	CreatedAt          string            `json:"createdAt"`
+	UpdatedAt          string            `json:"updatedAt"`
 }
 
 type ReviewData struct {
@@ -99,8 +99,8 @@ type ReviewData struct {
 	ReviewFactors []ReviewFactorData `json:"reviewFactors"`
 	PointType     string             `json:"pointType"`
 	Sections      []SectionData      `json:"sections"`
-	CreateAt      string             `json:"createAt"`
-	UpdateAt      string             `json:"updateAt"`
+	CreatedAt     string             `json:"createdAt"`
+	UpdatedAt     string             `json:"updatedAt"`
 }
 
 type TierEditingData struct {

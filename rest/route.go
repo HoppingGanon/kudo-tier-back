@@ -19,4 +19,5 @@ func Route(e *echo.Echo) {
 	e.PATCH("/tier", updateReqTier)
 	e.GET("/tiers", getReqTiers)
 	e.POST("/review", postReqReview)
+	e.GET("/review/:rid", getReqReview)
 }

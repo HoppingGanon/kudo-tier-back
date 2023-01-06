@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net"
+	"os"
 	common "reviewmakerback/common"
 	db "reviewmakerback/db"
 
@@ -166,4 +167,70 @@ func postReqReview(c echo.Context) error {
 
 	db.WriteOperationLog(session.UserId, requestIp, "create review("+reviewId+")")
 	return c.String(201, reviewId)
+}
+
+func makeReviewData(rid string, user db.User, review db.Review, tier db.Tier, code string) (ReviewData, *ErrorResponse) {
+	imageUrl := ""
+	if review.IconUrl != "" {
+		imageUrl = os.Getenv("AP_BASE_URL") + "/" + review.IconUrl
+	}
+
+	var sections []SectionData
+	err := json.Unmarshal([]byte(review.Sections), &sections)
+	if err != nil {
+		return ReviewData{}, MakeError(code+"-01", "説明文の取得に失敗しました")
+	}
+
+	var factors []ReviewFactorData
+	err = json.Unmarshal([]byte(review.ReviewFactors), &factors)
+	if err != nil {
+		return ReviewData{}, MakeError(code+"-02", "評価点・情報の取得に失敗しました")
+	}
+
+	return ReviewData{
+		ReviewId:      rid,
+		UserName:      user.Name,
+		UserId:        user.UserId,
+		UserIconUrl:   user.IconUrl,
+		TierId:        review.TierId,
+		Title:         review.Title,
+		Name:          review.Name,
+		IconUrl:       imageUrl,
+		ReviewFactors: factors,
+		PointType:     tier.PointType,
+		Sections:      sections,
+		CreatedAt:     common.DateToString(review.CreatedAt),
+		UpdatedAt:     common.DateToString(review.UpdatedAt),
+	}, nil
+}
+
+func getReqReview(c echo.Context) error {
+	rid := c.Param("rid")
+
+	var cnt int64
+
+	review, tx := db.GetReview(rid)
+	tx.Count(&cnt)
+	if cnt != 1 {
+		return c.JSON(404, MakeError("grev-02", "レビューが存在しません"))
+	}
+
+	user, tx := db.GetUser(review.UserId)
+	tx.Count(&cnt)
+	if cnt != 1 {
+		return c.JSON(404, MakeError("grev-01", "ユーザーが存在しません"))
+	}
+
+	tier, tx := db.GetTier(review.TierId)
+	tx.Count(&cnt)
+	if cnt != 1 {
+		return c.JSON(404, MakeError("grev-03", "レビューに紐づいたTier情報の取得に失敗しました"))
+	}
+
+	reviewData, er := makeReviewData(rid, user, review, tier, "gtir-003")
+	if er != nil {
+		return c.JSON(400, er)
+	}
+	return c.JSON(200, reviewData)
+
 }

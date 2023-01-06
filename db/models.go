@@ -76,6 +76,6 @@ type Review struct {
 	IconUrl       string    `gorm:"not null"`            // レビューアイコンのURL
 	ReviewFactors string    `gorm:"not null"`            // レビューの評価要素
 	Sections      string    `gorm:"not null"`            // レビュー説明セクション
-	CreateAt      time.Time `gorm:""`                    // 作成日
-	UpdateAt      time.Time `gorm:""`                    // 更新日
+	CreatedAt     time.Time `gorm:""`                    // 作成日
+	UpdatedAt     time.Time `gorm:""`                    // 更新日
 }

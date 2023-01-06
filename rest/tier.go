@@ -302,7 +302,7 @@ func makeTierData(tid string, user db.User, tier db.Tier, code string) (TierData
 		Reviews:            []ReviewData{},
 		PointType:          tier.PointType,
 		ReviewFactorParams: params,
-		CreateAt:           common.DateToString(tier.CreatedAt),
+		CreatedAt:          common.DateToString(tier.CreatedAt),
 		UpdatedAt:          common.DateToString(tier.UpdatedAt),
 	}, nil
 }
