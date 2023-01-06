@@ -128,21 +128,21 @@ type ReviewEditingData struct {
 }
 
 type ReviewFactorData struct {
-	Info  string `json:"info"`
-	Point int    `json:"point"`
+	Info  string  `json:"info"`
+	Point float32 `json:"point"`
 }
 
 type ReviewParamData struct {
-	Name    string `json:"name"`
-	IsPoint bool   `json:"isPoint"`
-	Weight  int    `json:"weight"`
-	Index   int    `json:"index"`
+	Name    string  `json:"name"`
+	IsPoint bool    `json:"isPoint"`
+	Weight  float32 `json:"weight"`
+	Index   int     `json:"index"`
 }
 
 type ReviewParam struct {
-	Name    string `json:"name"`
-	IsPoint bool   `json:"isPoint"`
-	Weight  int    `json:"weight"`
+	Name    string  `json:"name"`
+	IsPoint bool    `json:"isPoint"`
+	Weight  float32 `json:"weight"`
 }
 
 type SectionData struct {

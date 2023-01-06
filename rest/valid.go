@@ -43,11 +43,11 @@ type CommonError struct {
 
 var commonError = CommonError{
 	noSession: ErrorResponse{
-		Code:    "gen0-a-001-00",
+		Code:    "gen0-001-00",
 		Message: "セッションがありません",
 	},
 	unreadableBody: ErrorResponse{
-		Code:    "gen0-a-002-00",
+		Code:    "gen0-002-00",
 		Message: "データを読み取ることができませんでした",
 	},
 }
