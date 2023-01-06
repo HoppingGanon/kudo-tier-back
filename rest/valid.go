@@ -12,31 +12,6 @@ const maxSessionPerIp = 16
 // codeVeriferの文字数
 const codeVeriferCnt = 64
 
-type TierValidation struct {
-	// tier名の最大文字数最大
-	nameLenMax int
-	// 評価項目の合計数の上限
-	paramsLenMax int
-	// 評価項目名の文字数の上限
-	paramNameLenMax int
-	// tierの画像サイズの最大(KB)
-	imgMaxBytes int
-	// tierの画像サイズの一辺最大
-	imgMaxEdge int
-	// 画像のアスペクト比
-	imgAspectRate float32
-}
-
-// Tierに関するバリデーション
-var tierValidation = TierValidation{
-	nameLenMax:      100,
-	paramsLenMax:    16,
-	paramNameLenMax: 16,
-	imgMaxBytes:     5000,
-	imgMaxEdge:      1080,
-	imgAspectRate:   10.0 / 3.0,
-}
-
 type SectionValidation struct {
 	// セクションタイトルの最大文字数
 	sectionTitleLen int
@@ -55,42 +30,11 @@ var sectionValidation = SectionValidation{
 	paragLinkLenMax: 100,
 }
 
-// 一度に取得可能なTier数
-const tierPageSize = 10
-
 // リンクの文字数の長さの上限
 const paragLinkLenMax = 100
 
 // アスペクト比の振れ幅
 const aspectRateAmp = 0.1
-
-type ReviewValidation struct {
-	// tier名の最大文字数
-	nameLenMax int
-	// Tierタイトルの最大文字数
-	titleLenMax int
-	// セクションの最大数
-	sectionLenMax int
-	// 評価情報の文字数の上限
-	factorInfoLenMax int
-	// レビューアイコンサイズの最大(KB)
-	iconMaxBytes int
-	// レビューアイコンサイズの一辺最大
-	iconMaxEdge int
-	// 画像のアスペクト比
-	iconAspectRate float32
-}
-
-// レビューに関するバリデーション
-var reviewValidation = ReviewValidation{
-	nameLenMax:       50,
-	titleLenMax:      100,
-	sectionLenMax:    8,
-	factorInfoLenMax: 16,
-	iconMaxBytes:     1000,
-	iconMaxEdge:      1080,
-	iconAspectRate:   1.0,
-}
 
 type CommonError struct {
 	noSession      ErrorResponse

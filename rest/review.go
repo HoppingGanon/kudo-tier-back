@@ -10,6 +10,34 @@ import (
 	"github.com/labstack/echo"
 )
 
+type ReviewValidation struct {
+	// tier名の最大文字数
+	nameLenMax int
+	// Tierタイトルの最大文字数
+	titleLenMax int
+	// セクションの最大数
+	sectionLenMax int
+	// 評価情報の文字数の上限
+	factorInfoLenMax int
+	// レビューアイコンサイズの最大(KB)
+	iconMaxBytes int
+	// レビューアイコンサイズの一辺最大
+	iconMaxEdge int
+	// 画像のアスペクト比
+	iconAspectRate float32
+}
+
+// レビューに関するバリデーション
+var reviewValidation = ReviewValidation{
+	nameLenMax:       50,
+	titleLenMax:      100,
+	sectionLenMax:    8,
+	factorInfoLenMax: 16,
+	iconMaxBytes:     1000,
+	iconMaxEdge:      1080,
+	iconAspectRate:   1.0,
+}
+
 // Tierのバリデーション
 func validReview(reviewData ReviewEditingData, factorParams []ReviewParamData) (bool, *ErrorResponse) {
 	// バリデーションチェック

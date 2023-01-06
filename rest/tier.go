@@ -12,6 +12,34 @@ import (
 	"github.com/labstack/echo"
 )
 
+// 一度に取得可能なTier数
+const tierPageSize = 10
+
+type TierValidation struct {
+	// tier名の最大文字数最大
+	nameLenMax int
+	// 評価項目の合計数の上限
+	paramsLenMax int
+	// 評価項目名の文字数の上限
+	paramNameLenMax int
+	// tierの画像サイズの最大(KB)
+	imgMaxBytes int
+	// tierの画像サイズの一辺最大
+	imgMaxEdge int
+	// 画像のアスペクト比
+	imgAspectRate float32
+}
+
+// Tierに関するバリデーション
+var tierValidation = TierValidation{
+	nameLenMax:      100,
+	paramsLenMax:    16,
+	paramNameLenMax: 16,
+	imgMaxBytes:     5000,
+	imgMaxEdge:      1080,
+	imgAspectRate:   10.0 / 3.0,
+}
+
 // Tierのバリデーション
 func validTier(tierData TierEditingData) (bool, *ErrorResponse) {
 	// バリデーションチェック
@@ -218,21 +246,20 @@ func updateReqTier(c echo.Context) error {
 }
 
 func getReqTier(c echo.Context) error {
-	uid := c.Param("uid")
 	tid := c.Param("tid")
 
 	var cnt int64
-
-	user, tx := db.GetUser(uid)
-	tx.Count(&cnt)
-	if cnt != 1 {
-		return c.JSON(404, MakeError("gtir-001", "ユーザーが存在しません"))
-	}
 
 	tier, tx := db.GetTier(tid)
 	tx.Count(&cnt)
 	if cnt != 1 {
 		return c.JSON(404, MakeError("gtir-002", "Tierが存在しません"))
+	}
+
+	user, tx := db.GetUser(tier.UserId)
+	tx.Count(&cnt)
+	if cnt != 1 {
+		return c.JSON(404, MakeError("gtir-001", "ユーザーが存在しません"))
 	}
 
 	tierData, er := makeTierData(tid, user, tier, "gtir-003")

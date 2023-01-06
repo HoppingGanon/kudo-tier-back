@@ -69,7 +69,7 @@ type Tier struct {
 // Review
 type Review struct {
 	ReviewId      string    `gorm:"primaryKey;not null"` // レビュー固有のID
-	UserId        string    `gorm:"primaryKey;not null"` // 作成ユーザーの固有ID
+	UserId        string    `gorm:"not null"`            // 作成ユーザーの固有ID
 	TierId        string    `gorm:"not null"`            // 作成元Tierの固有ID
 	Title         string    `gorm:"not null"`            // レビューのタイトル
 	Name          string    `gorm:"not null"`            // レビューの名前
