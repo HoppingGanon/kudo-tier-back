@@ -8,16 +8,16 @@ import (
 	"gorm.io/gorm"
 )
 
-func GetUser(id string) (User, *gorm.DB) {
+func GetUser(id string, selectText string) (User, *gorm.DB) {
 	var user User
 
-	tx := Db.Where("user_id = ?", id).Find(&user)
+	tx := Db.Select(selectText).Where("user_id = ?", id).Find(&user)
 	return user, tx
 }
 
 func ExistsUser(id string) bool {
 	var cnt int64
-	_, tx := GetUser(id)
+	_, tx := GetUser(id, "user_id")
 	tx.Count(&cnt)
 	return cnt == 1
 }

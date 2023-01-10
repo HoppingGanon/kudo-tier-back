@@ -16,6 +16,9 @@ func InitDb() *gorm.DB {
 	Db = connectDB()
 	if Db != nil {
 		migrateDB()
+		println("マイグレートを実行しました")
+		ArrangeSession()
+		println("最初のセッション整理を行いました")
 	}
 	return Db
 }
@@ -60,6 +63,4 @@ func migrateDB() {
 		&Tier{},
 		&Review{},
 	)
-	println("マイグレートを実行しました")
-
 }

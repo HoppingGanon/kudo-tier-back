@@ -3,15 +3,15 @@ package rest
 type ErrorResponse struct {
 	/*
 		エラーコード
-			xxxx-nn[-ee]
+			xxxx-nnn[-ee]
 			xxxx 機能
-				gen0 一般的なエラー(セッションなど)
-				ses0 セッションエラー
-				vtir Tierのバリデーションエラー
-				ptir PostTiierのエラー
-				gtir GetTiierのエラー
-				grev GetReviewのエラー
-			nn 項目番号
+				 gen0 一般的なエラー(セッションなど)
+				 ses0 セッションエラー
+				 vtir Tierのバリデーションエラー
+				 ptir PostTiierのエラー
+				 gtir GetTiierのエラー
+				 grev GetReviewのエラー
+			nnn 項目番号
 			ee エラー詳細番号(特に詳細がなければ省略)
 	*/
 	Code string `json:"code"`
@@ -70,6 +70,8 @@ type UserData struct {
 	Name        string `json:"name"`        // 登録名
 	Profile     string `json:"profile"`     // 自己紹介文
 	TwitterName string `json:"twitterName"` // TwitterID(ログイン時のみ)
+	ReviewCount int64  `json:"reviewCount"` // 今までに投稿したレビュー数
+	TierCount   int64  `json:"tierCount"`   // 今までに投稿したTier数
 }
 
 type TierData struct {
@@ -109,7 +111,6 @@ type ReviewDataWithParams struct {
 }
 
 type TierEditingData struct {
-	TierId             string            `json:"tierId"`
 	Name               string            `json:"name"`
 	ImageBase64        string            `json:"imageBase64"`
 	Parags             []ParagData       `json:"parags"`
@@ -119,7 +120,6 @@ type TierEditingData struct {
 
 type ReviewEditingData struct {
 	TierId        string             `json:"tierId"`
-	ReviewId      string             `json:"reviewId"`
 	Title         string             `json:"title"`
 	Name          string             `json:"name"`
 	IconBase64    string             `json:"iconBase64"`
@@ -129,20 +129,20 @@ type ReviewEditingData struct {
 
 type ReviewFactorData struct {
 	Info  string  `json:"info"`
-	Point float32 `json:"point"`
+	Point float64 `json:"point"`
 }
 
 type ReviewParamData struct {
-	Name    string  `json:"name"`
-	IsPoint bool    `json:"isPoint"`
-	Weight  float32 `json:"weight"`
-	Index   int     `json:"index"`
+	Name    string `json:"name"`
+	IsPoint bool   `json:"isPoint"`
+	Weight  int    `json:"weight"`
+	Index   int    `json:"index"`
 }
 
 type ReviewParam struct {
-	Name    string  `json:"name"`
-	IsPoint bool    `json:"isPoint"`
-	Weight  float32 `json:"weight"`
+	Name    string `json:"name"`
+	IsPoint bool   `json:"isPoint"`
+	Weight  int    `json:"weight"`
 }
 
 type SectionData struct {
@@ -153,4 +153,14 @@ type SectionData struct {
 type ParagData struct {
 	Type string `json:"type"`
 	Body string `json:"body"`
+}
+
+type PostListsData struct {
+	Tiers   []PostListItem `json:"tiers"`
+	Reviews []PostListItem `json:"reviews"`
+}
+
+type PostListItem struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
 }

@@ -29,7 +29,7 @@ func getUserFile(c echo.Context) error {
 		// ユーザーID
 		return c.JSON(http.StatusBadRequest, MakeError("gen0-000", "不正なディレクトリが指定されました"))
 	}
-	if !contains(data, []string{"tier", "review", "user"}) {
+	if !common.Contains(data, []string{"tier", "review", "user"}) {
 		// データ(機能種別)
 		return c.JSON(http.StatusBadRequest, MakeError("gen0-001", "不正なディレクトリが指定されました"))
 	}

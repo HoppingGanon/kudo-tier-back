@@ -5,12 +5,15 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"strconv"
 
 	"github.com/labstack/echo"
 
 	db "reviewmakerback/db"
 	"unicode/utf8"
 )
+
+const latestPostMax = 100
 
 // ユーザー作成のためのPOSTリクエストの処理
 func postReqUser(c echo.Context) error {
@@ -110,22 +113,32 @@ func updateReqUser(c echo.Context) error {
 func getReqUserData(c echo.Context) error {
 	// 送信元ユーザーと参照先ユーザーが同じかどうかチェック
 	session, err := db.CheckSession(c)
+
+	var existsSession bool
+	if err != nil {
+		// セッションが存在しない
+		existsSession = false
+	}
+
 	user := db.User{}
 	var cnt int64
 
-	uid := c.Param("id")
-	db.Db.Where("user_id = ?", uid).Find(&user).Count(&cnt)
+	uid := c.Param("uid")
+	user, tx := db.GetUser(uid, "*")
+	tx.Count(&cnt)
 
 	if cnt != 1 {
 		return c.JSON(404, MakeError("gusr-001", "ユーザーが存在しません"))
 	}
 
 	res := UserData{
-		IsSelf:      false,
+		IsSelf:      existsSession && session.UserId == user.UserId,
 		IconUrl:     user.IconUrl,
 		TwitterName: "",
 		Name:        user.Name,
 		Profile:     user.Profile,
+		ReviewCount: db.GetReviewCountInUser(user.UserId),
+		TierCount:   db.GetTierCountInUser(user.UserId),
 	}
 
 	if err == nil && uid == session.UserId {
@@ -137,4 +150,49 @@ func getReqUserData(c echo.Context) error {
 		res.IsSelf = false
 	}
 	return c.JSON(200, res)
+}
+
+func getReqLatestPostLists(c echo.Context) error {
+	uid := c.Param("uid")
+
+	length, err := strconv.Atoi(c.QueryParam("length"))
+
+	if err != nil {
+		return c.JSON(400, MakeError("gpls-001", "ページ指定が異常です"))
+	} else {
+		f, er := validInteger("一度に取得できる投稿の件数上限", "gpls-001", length, 0, latestPostMax)
+		if !f {
+			return c.JSON(400, er)
+		}
+	}
+
+	if !db.ExistsUser(uid) {
+		return c.JSON(404, MakeError("gpls-004", "ユーザーが存在しません"))
+	}
+
+	var tiers []db.Tier
+	db.Db.Select("tier_id, name").Where("user_id = ?", uid).Order("updated_at desc").Limit(length).Find(&tiers)
+
+	var reviews []db.Review
+	db.Db.Select("review_id, name").Where("user_id = ?", uid).Order("updated_at desc").Limit(length).Find(&reviews)
+
+	postListData := PostListsData{
+		Tiers:   make([]PostListItem, len(tiers)),
+		Reviews: make([]PostListItem, len(reviews)),
+	}
+
+	for i, tier := range tiers {
+		postListData.Tiers[i] = PostListItem{
+			Id:   tier.TierId,
+			Name: tier.Name,
+		}
+	}
+
+	for i, review := range reviews {
+		postListData.Reviews[i] = PostListItem{
+			Id:   review.ReviewId,
+			Name: review.Name,
+		}
+	}
+	return c.JSON(200, postListData)
 }

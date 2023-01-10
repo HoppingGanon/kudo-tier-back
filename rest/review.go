@@ -2,6 +2,7 @@ package rest
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
@@ -21,7 +22,7 @@ type ReviewValidation struct {
 	// 評価情報の文字数の上限
 	factorInfoLenMax int
 	// レビューアイコンサイズの最大(KB)
-	iconMaxBytes int
+	iconMaxBytes float64
 	// レビューアイコンサイズの一辺最大
 	iconMaxEdge int
 	// 画像のアスペクト比
@@ -34,13 +35,13 @@ var reviewValidation = ReviewValidation{
 	titleLenMax:      100,
 	sectionLenMax:    8,
 	factorInfoLenMax: 16,
-	iconMaxBytes:     1000,
-	iconMaxEdge:      1080,
+	iconMaxBytes:     5000,
+	iconMaxEdge:      256,
 	iconAspectRate:   1.0,
 }
 
 // Tierのバリデーション
-func validReview(reviewData ReviewEditingData, factorParams []ReviewParamData) (bool, *ErrorResponse) {
+func validReview(reviewData ReviewEditingData, factorParams []ReviewParamData, pointType string) (bool, *ErrorResponse) {
 	// バリデーションチェック
 	// Name
 	f, e := validText("レビュー名", "vrev-001", reviewData.Name, true, -1, reviewValidation.nameLenMax, "", "")
@@ -62,6 +63,12 @@ func validReview(reviewData ReviewEditingData, factorParams []ReviewParamData) (
 	}
 	for i, factor := range reviewData.ReviewFactors {
 		if factorParams[i].IsPoint {
+			if pointType != "unlimited" {
+				f, e = ValidFloat("評価情報", "vrev-004", float64(factor.Point), 0, 100)
+				if !f {
+					return false, e
+				}
+			}
 		} else {
 			f, e = validText("評価情報", "vrev-004", factor.Info, false, -1, reviewValidation.factorInfoLenMax, "", "")
 			if !f {
@@ -90,7 +97,7 @@ func validReview(reviewData ReviewEditingData, factorParams []ReviewParamData) (
 
 	// 画像が既定のサイズ以下であることを確認する
 	if reviewData.IconBase64 != "nochange" {
-		if len(reviewData.IconBase64) > reviewValidation.iconMaxBytes*1024*8/6 {
+		if len(reviewData.IconBase64) > int(reviewValidation.iconMaxBytes*1024*8/6) {
 			return false, MakeError("vrev-007", "画像のサイズが大きすぎます")
 		}
 	}
@@ -115,9 +122,118 @@ func postReqReview(c echo.Context) error {
 		return c.JSON(400, commonError.unreadableBody)
 	}
 
-	tier, tx := db.GetTier(reviewData.TierId, "tier_id, factor_params")
+	// Tier検索
+	tier, tx := db.GetTier(reviewData.TierId, "tier_id, factor_params, user_id")
+	if tx.Error != nil {
+		return c.JSON(400, MakeError("prev-001", "レビューに対応するTierが存在しません"))
+	}
+	var cnt int64
+	tx.Count(&cnt)
+	if cnt != 1 {
+		return c.JSON(400, MakeError("prev-002", "レビューに対応するTierが存在しません"))
+	}
+
+	if db.GetReviewCountInTier(tier.TierId) > ReviewMaxInTier {
+		return c.JSON(400, MakeError("prev-003", fmt.Sprintf("登録できるレビューはTier一つにつき%d個までです", ReviewMaxInTier)))
+	}
+
+	// 編集ユーザーとTier所有ユーザーチェック
+	if session.UserId != tier.UserId {
+		return c.JSON(403, commonError.userNotEqual)
+	}
+
+	var params []ReviewParamData
+	err = json.Unmarshal([]byte(tier.FactorParams), &params)
+	if err != nil {
+		return c.JSON(400, MakeError("prev-004", "Tierの情報取得に失敗しました"))
+	}
+
+	f, e := validReview(reviewData, params, tier.PointType)
+	if !f {
+		return c.JSON(400, e)
+	}
+
+	reviewId, err := db.CreateReviewId(session.UserId, tier.TierId)
+	if err != nil {
+		return c.JSON(400, MakeError("prev-005", "レビューIDが生成出来ませんでした しばらく時間を開けて実行してください"))
+	}
+
+	factors, err := json.Marshal(reviewData.ReviewFactors)
+	if err != nil {
+		return c.JSON(400, MakeError("prev-006", ""))
+	}
+
+	sections, err := json.Marshal(reviewData.Sections)
+	if err != nil {
+		return c.JSON(400, MakeError("prev-007", ""))
+	}
+
+	// 画像データの名前を生成
+	code, err := common.MakeRandomChars(16, reviewId)
+	if err != nil {
+		return c.JSON(400, MakeError("prev-008", "レビューアイコンの保存に失敗しました しばらく時間を開けて実行してください"))
+	}
+	fname := "icon_" + code + ".jpg"
+
+	// 画像の保存
+	path, er := savePicture(session.UserId, "review", reviewId, fname, "", reviewData.IconBase64, "prev-009", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
+	if er != nil {
+		return c.JSON(400, er)
+	}
+
+	err = db.CreateReview(session.UserId, reviewData.TierId, reviewId, reviewData.Name, reviewData.Title, path, string(factors), string(sections))
+	if err != nil {
+		db.WriteErrorLog(session.UserId, requestIp, "prev-010", "Tierの作成に失敗しました", err.Error())
+		return c.JSON(400, MakeError("prev-010", "Tierの作成に失敗しました"))
+	}
+
+	db.WriteOperationLog(session.UserId, requestIp, "create review("+reviewId+")")
+	return c.String(201, reviewId)
+}
+
+func updateReqReview(c echo.Context) error {
+	rid := c.Param("rid")
+
+	// セッションの存在チェック
+	session, err := db.CheckSession(c)
+	if err != nil {
+		return c.JSON(403, commonError.noSession)
+	}
+
+	requestIp := net.ParseIP(c.RealIP()).String()
+
+	// Bodyの読み取り
+	b, _ := ioutil.ReadAll(c.Request().Body)
+	var reviewData ReviewEditingData
+	err = json.Unmarshal(b, &reviewData)
+	if err != nil {
+		return c.JSON(400, commonError.unreadableBody)
+	}
+
+	// 元レビュー検索
+	orgReview, tx := db.GetReview(rid, "review_id, user_id")
+	if tx.Error != nil {
+		return c.JSON(400, MakeError("prev-000", "対応するレビューが存在しません"))
+	}
+	var cnt int64
+	tx.Count(&cnt)
+	if cnt != 1 {
+		return c.JSON(400, MakeError("prev-000", "レビューに対応するTierが存在しません"))
+	}
+
+	// Tier検索
+	tier, tx := db.GetTier(rid, "tier_id, factor_params")
 	if tx.Error != nil {
 		return c.JSON(400, MakeError("prev-000", "レビューに対応するTierが存在しません"))
+	}
+	tx.Count(&cnt)
+	if cnt != 1 {
+		return c.JSON(400, MakeError("prev-000", "レビューに対応するTierが存在しません"))
+	}
+
+	// 編集ユーザーとTier・レビュー所有ユーザーチェック
+	if session.UserId != orgReview.UserId || session.UserId != tier.UserId {
+		return c.JSON(403, commonError.userNotEqual)
 	}
 
 	var params []ReviewParamData
@@ -126,14 +242,9 @@ func postReqReview(c echo.Context) error {
 		return c.JSON(400, MakeError("prev-001", "Tierの情報取得に失敗しました"))
 	}
 
-	f, e := validReview(reviewData, params)
+	f, e := validReview(reviewData, params, tier.PointType)
 	if !f {
 		return c.JSON(400, e)
-	}
-
-	reviewId, err := db.CreateReviewId(session.UserId, tier.TierId)
-	if err != nil {
-		return c.JSON(400, MakeError("prev-002", "レビューIDが生成出来ませんでした しばらく時間を開けて実行してください"))
 	}
 
 	factors, err := json.Marshal(reviewData.ReviewFactors)
@@ -147,26 +258,26 @@ func postReqReview(c echo.Context) error {
 	}
 
 	// 画像データの名前を生成
-	code, err := common.MakeRandomChars(16, reviewId)
+	code, err := common.MakeRandomChars(16, orgReview.ReviewId)
 	if err != nil {
 		return c.JSON(400, MakeError("prev-005", "レビューアイコンの保存に失敗しました しばらく時間を開けて実行してください"))
 	}
-	fname := "image_" + code + ".jpg"
+	fname := "icon_" + code + ".jpg"
 
 	// 画像の保存
-	path, er := savePicture(session.UserId, "review", reviewId, fname, "", reviewData.IconBase64, "prev-006", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
-	if err != nil {
+	path, er := savePicture(session.UserId, "review", orgReview.ReviewId, fname, orgReview.IconUrl, reviewData.IconBase64, "prev-006", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
+	if er != nil {
 		return c.JSON(400, er)
 	}
 
-	err = db.CreateReview(session.UserId, reviewData.TierId, reviewId, reviewData.Name, reviewData.Title, path, string(factors), string(sections))
+	err = db.UpdateReview(orgReview, reviewData.Name, reviewData.Title, path, string(factors), string(sections))
 	if err != nil {
 		db.WriteErrorLog(session.UserId, requestIp, "prev-007", "Tierの作成に失敗しました", err.Error())
 		return c.JSON(400, MakeError("prev-007", "Tierの作成に失敗しました"))
 	}
 
-	db.WriteOperationLog(session.UserId, requestIp, "create review("+reviewId+")")
-	return c.String(201, reviewId)
+	db.WriteOperationLog(session.UserId, requestIp, "update review("+orgReview.ReviewId+")")
+	return c.String(201, orgReview.ReviewId)
 }
 
 func makeReviewData(rid string, user db.User, review db.Review, tier db.Tier, code string) (ReviewData, *ErrorResponse) {
@@ -215,7 +326,7 @@ func getReqReview(c echo.Context) error {
 		return c.JSON(404, MakeError("grev-002", "レビューが存在しません"))
 	}
 
-	user, tx := db.GetUser(review.UserId)
+	user, tx := db.GetUser(review.UserId, "*")
 	tx.Count(&cnt)
 	if cnt != 1 {
 		return c.JSON(404, MakeError("grev-001", "ユーザーが存在しません"))
@@ -241,5 +352,4 @@ func getReqReview(c echo.Context) error {
 		Review: reviewData,
 		Params: params,
 	})
-
 }

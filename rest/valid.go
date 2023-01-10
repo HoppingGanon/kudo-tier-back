@@ -3,6 +3,7 @@ package rest
 import (
 	"fmt"
 	"regexp"
+	"reviewmakerback/common"
 	"unicode/utf8"
 )
 
@@ -25,8 +26,8 @@ type SectionValidation struct {
 
 var sectionValidation = SectionValidation{
 	sectionTitleLen: 100,
-	paragTextLenMax: 16,
-	paragsLenMax:    400,
+	paragTextLenMax: 400,
+	paragsLenMax:    16,
 	paragLinkLenMax: 100,
 }
 
@@ -39,6 +40,7 @@ const aspectRateAmp = 0.1
 type CommonError struct {
 	noSession      ErrorResponse
 	unreadableBody ErrorResponse
+	userNotEqual   ErrorResponse
 }
 
 var commonError = CommonError{
@@ -49,6 +51,10 @@ var commonError = CommonError{
 	unreadableBody: ErrorResponse{
 		Code:    "gen0-002-00",
 		Message: "データを読み取ることができませんでした",
+	},
+	userNotEqual: ErrorResponse{
+		Code:    "gen0-003-00",
+		Message: "このユーザーの編集権限はありません",
 	},
 }
 
@@ -83,23 +89,24 @@ func validText(title string, code string, text string, required bool, min int, m
 func validInteger(title string, code string, val int, min int, max int) (bool, *ErrorResponse) {
 	if val < min {
 		return false, MakeError(code+"-00", fmt.Sprintf("%sは%d以上の整数を入力してください", title, min))
-	} else if val < max {
+	} else if val > max {
 		return false, MakeError(code+"-01", fmt.Sprintf("%sは%d以下の整数を入力してください", title, max))
 	}
 	return true, nil
 }
 
-func contains(s string, a []string) bool {
-	for _, v := range a {
-		if s == v {
-			return true
-		}
+// 浮動小数に対するバリデーション
+func ValidFloat(title string, code string, val float64, min float64, max float64) (bool, *ErrorResponse) {
+	if val < min {
+		return false, MakeError(code+"-00", fmt.Sprintf("%sは%f以上の数値を入力してください", title, min))
+	} else if val > max {
+		return false, MakeError(code+"-01", fmt.Sprintf("%sは%f以下の数値を入力してください", title, max))
 	}
-	return false
+	return true, nil
 }
 
 func IsPointType(v string) bool {
-	return contains(v, []string{
+	return common.Contains(v, []string{
 		"stars",
 		"rank7",
 		"rank14",
@@ -110,17 +117,21 @@ func IsPointType(v string) bool {
 }
 
 func validParagraphs(parags []ParagData) (bool, *ErrorResponse) {
+	if len(parags) > sectionValidation.paragsLenMax {
+		return false, MakeError("vpgs-002", fmt.Sprintf("説明文/リンクは合計%d個以下にする必要があります", sectionValidation.paragsLenMax))
+	}
+
 	for _, parag := range parags {
 		if !IsParagraphType(parag.Type) {
-			return false, MakeError("vpgs-001", "説明文/リンクのタイプが異常です")
+			return false, MakeError("vpgs-002", "説明文/リンクのタイプが異常です")
 		} else {
 			if parag.Type == "text" {
-				f, e := validText("説明文", "vpgs-002", parag.Body, false, -1, sectionValidation.paragTextLenMax, "", "")
+				f, e := validText("説明文", "vpgs-003", parag.Body, false, -1, sectionValidation.paragTextLenMax, "", "")
 				if !f {
 					return false, e
 				}
 			} else if parag.Type == "twitterLink" {
-				f, e := validText("Twitterリンク", "vpgs-003", parag.Body, false, -1, paragLinkLenMax, "", "")
+				f, e := validText("Twitterリンク", "vpgs-004", parag.Body, false, -1, paragLinkLenMax, "", "")
 				if !f {
 					return false, e
 				}
@@ -133,7 +144,7 @@ func validParagraphs(parags []ParagData) (bool, *ErrorResponse) {
 }
 
 func IsParagraphType(v string) bool {
-	return contains(v, []string{
+	return common.Contains(v, []string{
 		"text",
 		"twitterLink",
 		"imageLink",
@@ -141,7 +152,7 @@ func IsParagraphType(v string) bool {
 }
 
 func IsTierSortType(v string) bool {
-	return contains(v, []string{
+	return common.Contains(v, []string{
 		"updatedAtDesc",
 		"updatedAtAsc",
 		"createdAtDesc",

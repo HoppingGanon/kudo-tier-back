@@ -1,8 +1,6 @@
 package db
 
 import (
-	"time"
-
 	common "reviewmakerback/common"
 
 	"gorm.io/gorm"
@@ -23,6 +21,7 @@ func ExistsTier(tid string) bool {
 	tx.Count(&cnt)
 	return cnt == 1
 }
+
 func CreateTierId(userId string) (string, error) {
 	var id string
 	var err error
@@ -92,7 +91,7 @@ func UpdateTier(
 	tier.Parags = parags
 	tier.PointType = pointType
 	tier.FactorParams = factorParams
-	tier.UpdatedAt = time.Now()
+	// tier.UpdatedAt = time.Now()
 	if imageUrl != "nochange" {
 		tier.ImageUrl = imageUrl
 	}
@@ -130,4 +129,15 @@ func GetTiers(userId string, word string, sortType string, page int, pageSize in
 	tx.Offset(pageSize * (page - 1)).Limit(pageSize).Find(&tiers)
 
 	return tiers, nil
+}
+
+func DeleteTier(tierId string) error {
+	tx := Db.Select("tier_id").Where("tier_id = ?", tierId).Delete(&Tier{})
+	return tx.Error
+}
+
+func GetTierCountInUser(userId string) int64 {
+	var cnt int64
+	Db.Select("tier_id").Where("user_id = ?", userId).Find(&Tier{}).Count(&cnt)
+	return cnt
 }

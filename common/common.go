@@ -7,8 +7,20 @@ import (
 	"errors"
 	"math/big"
 	"regexp"
+	"strings"
 	"time"
+	"unicode"
 )
+
+// 文字列配列の中に指定した文字列が存在するかどうかチェックする関数
+func Contains(s string, a []string) bool {
+	for _, v := range a {
+		if s == v {
+			return true
+		}
+	}
+	return false
+}
 
 // SHA256のハッシュをバイナリで返す
 func GetBinSHA256(s string) []byte {
@@ -53,4 +65,24 @@ func DateToString(v time.Time) string {
 
 func TestRegexp(reg, str string) bool {
 	return regexp.MustCompile(reg).Match([]byte(str))
+}
+
+// 参考: Goで文字列をスネークケースに変換する
+// 著者: ohnishi
+// https://zenn.dev/ohnishi/articles/1c84376fe89f70888b9c
+func ToSnakeCase(s string) string {
+	b := &strings.Builder{}
+	for i, r := range s {
+		if i == 0 {
+			b.WriteRune(unicode.ToLower(r))
+			continue
+		}
+		if unicode.IsUpper(r) {
+			b.WriteRune('_')
+			b.WriteRune(unicode.ToLower(r))
+			continue
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
 }

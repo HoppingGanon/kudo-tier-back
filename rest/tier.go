@@ -2,6 +2,7 @@ package rest
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
@@ -12,8 +13,11 @@ import (
 	"github.com/labstack/echo"
 )
 
-// 一度に取得可能なTier数
-const tierPageSize = 10
+// 一度に取得可能なTier/レビュー数
+const postPageSize = 10
+
+// レビューの最大登録数
+const ReviewMaxInTier = 255
 
 type TierValidation struct {
 	// tier名の最大文字数最大
@@ -23,7 +27,7 @@ type TierValidation struct {
 	// 評価項目名の文字数の上限
 	paramNameLenMax int
 	// tierの画像サイズの最大(KB)
-	imgMaxBytes int
+	imgMaxBytes float64
 	// tierの画像サイズの一辺最大
 	imgMaxEdge int
 	// 画像のアスペクト比
@@ -52,22 +56,24 @@ func validTier(tierData TierEditingData) (bool, *ErrorResponse) {
 	// Paragsのチェック
 	if tierData.Parags == nil {
 		return false, MakeError("vtir-002", "説明文等がNULLです")
+	} else if len(tierData.Parags) > sectionValidation.paragsLenMax {
+		return false, MakeError("vtir-003", fmt.Sprintf("説明文等の合計数が最大の%d個を超えています", sectionValidation.paragsLenMax))
 	}
 
 	for _, v := range tierData.Parags {
 		// タイプのチェック
 		if !IsParagraphType(v.Type) {
-			return false, MakeError("vtir-003", "説明文/リンクのタイプが異常です")
+			return false, MakeError("vtir-004", "説明文/リンクのタイプが異常です")
 		} else {
 			if v.Type == "text" {
 				// 説明文
-				f, e := validText("説明文", "vtir-004", v.Body, true, -1, sectionValidation.paragTextLenMax, "", "")
+				f, e := validText("説明文", "vtir-005", v.Body, true, -1, sectionValidation.paragTextLenMax, "", "")
 				if !f {
 					return f, e
 				}
 			} else if v.Type == "twitterLink" {
 				// Twitterリンク
-				f, e := validText("Twitterリンク", "vtir-005", v.Body, true, -1, sectionValidation.paragLinkLenMax, "", "")
+				f, e := validText("Twitterリンク", "vtir-006", v.Body, true, -1, sectionValidation.paragLinkLenMax, "", "")
 				if !f {
 					return f, e
 				}
@@ -77,13 +83,13 @@ func validTier(tierData TierEditingData) (bool, *ErrorResponse) {
 
 	// PointTypeのチェック
 	if !IsPointType(tierData.PointType) {
-		return false, MakeError("vtir-006", "ポイント表示方法が異常です")
+		return false, MakeError("vtir-007", "ポイント表示方法が異常です")
 	}
 
 	// 画像が既定のサイズ以下であることを確認する
 	if tierData.ImageBase64 != "nochange" {
-		if len(tierData.ImageBase64) > tierValidation.imgMaxBytes*1024*8/6 {
-			return false, MakeError("vtir-007", "画像のサイズが大きすぎます")
+		if len(tierData.ImageBase64) > int(tierValidation.imgMaxBytes*1024*8/6) {
+			return false, MakeError("vtir-008", "画像のサイズが大きすぎます")
 		}
 	}
 
@@ -102,9 +108,19 @@ func validTier(tierData TierEditingData) (bool, *ErrorResponse) {
 
 	for _, v := range tierData.ReviewFactorParams {
 		// 評価項目名の文字数チェック
-		f, e := validText("評価項目名", "vtir-008", v.Name, true, -1, tierValidation.paramsLenMax, "", "")
+		f, e := validText("評価項目名", "vtir-011", v.Name, true, -1, tierValidation.paramsLenMax, "", "")
 		if !f {
 			return f, e
+		}
+	}
+
+	for _, v := range tierData.ReviewFactorParams {
+		// 評価項目の重み範囲チェック
+		if v.IsPoint {
+			f, e := validInteger("評価項目名", "vtir-012", v.Weight, 0, 100)
+			if !f {
+				return f, e
+			}
 		}
 	}
 
@@ -180,7 +196,7 @@ func postReqTier(c echo.Context) error {
 
 	// 画像の保存
 	path, er := savePicture(session.UserId, "tier", tierId, fname, "", tierData.ImageBase64, "ptir-007", tierValidation.imgMaxEdge, tierValidation.imgAspectRate, 80)
-	if err != nil {
+	if er != nil {
 		return c.JSON(400, er)
 	}
 
@@ -195,6 +211,8 @@ func postReqTier(c echo.Context) error {
 }
 
 func updateReqTier(c echo.Context) error {
+	tid := c.Param("tid")
+
 	// セッションの存在チェック
 	session, err := db.CheckSession(c)
 	if err != nil {
@@ -213,10 +231,15 @@ func updateReqTier(c echo.Context) error {
 
 	// Tierのチェック
 	var cnt int64
-	tier, tx := db.GetTier(tierData.TierId, "*")
+	tier, tx := db.GetTier(tid, "*")
 	tx.Count(&cnt)
 	if cnt != 1 {
-		return c.JSON(400, MakeError("utir-000", "該当するTierがありません"))
+		return c.JSON(400, MakeError("utir-001", "該当するTierがありません"))
+	}
+
+	// 編集ユーザーとTier所有ユーザーチェック
+	if session.UserId != tier.UserId {
+		return c.JSON(403, commonError.userNotEqual)
 	}
 
 	f, e := validTier(tierData)
@@ -226,45 +249,45 @@ func updateReqTier(c echo.Context) error {
 
 	params, err := json.Marshal(tierData.ReviewFactorParams)
 	if err != nil {
-		return c.JSON(400, MakeError("utir-001", "重みの登録に失敗しました"))
+		return c.JSON(400, MakeError("utir-002", "重みの登録に失敗しました"))
 	}
 
 	var params2 []ReviewParam
 	err = json.Unmarshal([]byte(params), &params2)
 	if err != nil {
-		return c.JSON(400, MakeError("utir-002", "重みの登録に失敗しました"))
+		return c.JSON(400, MakeError("utir-003", "重みの登録に失敗しました"))
 	}
 
 	params3, err := json.Marshal(params2)
 	if err != nil {
-		return c.JSON(400, MakeError("utir-003", "重みの登録に失敗しました"))
+		return c.JSON(400, MakeError("utir-004", "重みの登録に失敗しました"))
 	}
 
 	parags, err := json.Marshal(tierData.Parags)
 	if err != nil {
-		return c.JSON(400, MakeError("utir-004", "説明文の登録に失敗しました"))
+		return c.JSON(400, MakeError("utir-005", "説明文の登録に失敗しました"))
 	}
 
 	// 画像データの名前を生成
-	code, err := common.MakeRandomChars(16, tierData.TierId)
+	code, err := common.MakeRandomChars(16, tid)
 	if err != nil {
-		return c.JSON(400, MakeError("utir-005", "TierIDが生成出来ませんでした しばらく時間を開けて実行してください"))
+		return c.JSON(400, MakeError("utir-006", "TierIDが生成出来ませんでした しばらく時間を開けて実行してください"))
 	}
 	fname := "icon_" + code + ".jpg"
 
-	path, er := savePicture(session.UserId, "tier", tierData.TierId, fname, tier.ImageUrl, tierData.ImageBase64, "utir-006", tierValidation.imgMaxEdge, tierValidation.imgAspectRate, 80)
+	path, er := savePicture(session.UserId, "tier", tid, fname, tier.ImageUrl, tierData.ImageBase64, "utir-007", tierValidation.imgMaxEdge, tierValidation.imgAspectRate, 80)
 	if er != nil {
 		return c.JSON(400, er)
 	}
 
-	err = db.UpdateTier(tier, session.UserId, tierData.TierId, tierData.Name, path, string(parags), tierData.PointType, string(params3))
+	err = db.UpdateTier(tier, session.UserId, tid, tierData.Name, path, string(parags), tierData.PointType, string(params3))
 	if err != nil {
-		db.WriteErrorLog(session.UserId, requestIp, "utir-007", "Tierの作成に失敗しました", err.Error())
-		return c.JSON(400, MakeError("utir-007", "Tierの作成に失敗しました"))
+		db.WriteErrorLog(session.UserId, requestIp, "utir-008", "Tierの作成に失敗しました", err.Error())
+		return c.JSON(400, MakeError("utir-008", "Tierの作成に失敗しました"))
 	}
 
-	db.WriteOperationLog(session.UserId, requestIp, "update tier("+tierData.TierId+")")
-	return c.String(201, tierData.TierId)
+	db.WriteOperationLog(session.UserId, requestIp, "update tier("+tid+")")
+	return c.String(200, tid)
 }
 
 func getReqTier(c echo.Context) error {
@@ -278,7 +301,7 @@ func getReqTier(c echo.Context) error {
 		return c.JSON(404, MakeError("gtir-002", "Tierが存在しません"))
 	}
 
-	user, tx := db.GetUser(tier.UserId)
+	user, tx := db.GetUser(tier.UserId, "*")
 	tx.Count(&cnt)
 	if cnt != 1 {
 		return c.JSON(404, MakeError("gtir-001", "ユーザーが存在しません"))
@@ -288,6 +311,23 @@ func getReqTier(c echo.Context) error {
 	if er != nil {
 		return c.JSON(400, er)
 	}
+
+	reviews, err := db.GetReviews(user.UserId, tid, "", "updatedAtDesc", 1, ReviewMaxInTier, false)
+	if err != nil {
+		return c.JSON(404, MakeError("gtir-003", "Tierに紐づくレビューが取得できませんでした"))
+	}
+
+	reviewDataList := make([]ReviewData, len(reviews))
+	for i, review := range reviews {
+		reviewData, err := makeReviewData(review.ReviewId, user, review, tier, "")
+		if err != nil {
+			return c.JSON(404, MakeError("gtir-004", "Tierに紐づくレビューが取得できませんでした"))
+		}
+		reviewDataList[i] = reviewData
+	}
+
+	tierData.Reviews = reviewDataList
+
 	return c.JSON(200, tierData)
 }
 
@@ -346,14 +386,14 @@ func getReqTiers(c echo.Context) error {
 	}
 
 	var cnt int64
-	user, tx := db.GetUser(userId)
+	user, tx := db.GetUser(userId, "*")
 	tx.Count(&cnt)
 	if cnt != 1 {
 		return c.JSON(404, MakeError("gtrs-004", "指定されたユーザーは存在しません"))
 	}
 
 	var er *ErrorResponse
-	tiers, err := db.GetTiers(userId, word, sortType, page, tierPageSize)
+	tiers, err := db.GetTiers(userId, word, sortType, page, postPageSize)
 	if err != nil {
 		return c.JSON(400, MakeError("gtrs-005", "Tierが取得できません"))
 	}
@@ -366,4 +406,47 @@ func getReqTiers(c echo.Context) error {
 		}
 	}
 	return c.JSON(200, tierDataList)
+}
+
+func deleteReqTier(c echo.Context) error {
+	tid := c.Param("tid")
+
+	// セッションの存在チェック
+	session, err := db.CheckSession(c)
+	if err != nil {
+		return c.JSON(403, commonError.noSession)
+	}
+
+	requestIp := net.ParseIP(c.RealIP()).String()
+
+	tier, tx := db.GetTier(tid, "tier_id, user_id")
+
+	// 編集ユーザーとTier所有ユーザーチェック
+	if session.UserId != tier.UserId {
+		return c.JSON(403, commonError.userNotEqual)
+	}
+
+	var cnt int64
+	tx.Count(&cnt)
+
+	if cnt != 1 {
+		return c.JSON(400, MakeError("dtir-001", "対象のTierがありません"))
+	}
+
+	err = db.DeleteTier(tid)
+
+	if err != nil {
+		db.WriteErrorLog(session.UserId, requestIp, "dtir-002", "Tierの削除に失敗しました", err.Error())
+		return c.JSON(400, MakeError("dtir-002", "Tierの削除に失敗しました"))
+	}
+
+	err = db.DeleteReviews(tid)
+
+	if err != nil {
+		db.WriteErrorLog(session.UserId, requestIp, "dtir-003", "Tierに紐づくレビューの削除に失敗しました", err.Error())
+		return c.JSON(400, MakeError("dtir-003", "Tierに紐づくレビューの削除に失敗しました"))
+	}
+
+	db.WriteOperationLog(session.UserId, requestIp, "delete tier("+tid+")")
+	return c.NoContent(200)
 }

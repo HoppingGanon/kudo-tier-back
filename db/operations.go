@@ -2,6 +2,7 @@ package db
 
 import (
 	"errors"
+	"reflect"
 	"strings"
 	"time"
 
@@ -10,6 +11,9 @@ import (
 	"github.com/labstack/echo"
 	"gorm.io/gorm"
 )
+
+const TempSessionAlive = 60
+const TempSessionDelSpan = 60
 
 // 各ID作成に失敗した際の最大試行回数
 const retryCreateCnt = 3
@@ -123,4 +127,27 @@ func SearchWord(columns []string, word string) *gorm.DB {
 		txAnd = txAnd.Where(txOr)
 	}
 	return txAnd
+}
+
+func ArrangeSession() {
+	// 一時セッションの生存期間が終了したデータを削除
+	Db.Where("access_time < ?", time.Now().Add(-TempSessionDelSpan*time.Second)).Delete(&TempSession{})
+	// セッションの生存期間が終了したデータを削除
+	Db.Where("expired_time < ?", time.Now()).Delete(&Session{})
+}
+
+func ExcludeSelect(baseStruct interface{}, columns ...string) string {
+	types := reflect.TypeOf(baseStruct)
+	var name string
+	selectText := ""
+	for i := 0; i < reflect.ValueOf(baseStruct).NumField(); i++ {
+		name = types.Field(i).Name
+		if !common.Contains(name, columns) {
+			selectText += common.ToSnakeCase(name)
+			if i != reflect.ValueOf(baseStruct).NumField()-1 {
+				selectText += ", "
+			}
+		}
+	}
+	return selectText
 }
