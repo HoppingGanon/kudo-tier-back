@@ -8,6 +8,7 @@ import (
 	"os"
 	common "reviewmakerback/common"
 	db "reviewmakerback/db"
+	"strconv"
 
 	"github.com/labstack/echo"
 )
@@ -280,7 +281,7 @@ func updateReqReview(c echo.Context) error {
 	return c.String(201, orgReview.ReviewId)
 }
 
-func makeReviewData(rid string, user db.User, review db.Review, tier db.Tier, code string) (ReviewData, *ErrorResponse) {
+func makeReviewData(rid string, user db.User, review db.Review, pointType string, code string) (ReviewData, *ErrorResponse) {
 	imageUrl := ""
 	if review.IconUrl != "" {
 		imageUrl = os.Getenv("AP_BASE_URL") + "/" + review.IconUrl
@@ -308,7 +309,7 @@ func makeReviewData(rid string, user db.User, review db.Review, tier db.Tier, co
 		Name:          review.Name,
 		IconUrl:       imageUrl,
 		ReviewFactors: factors,
-		PointType:     tier.PointType,
+		PointType:     pointType,
 		Sections:      sections,
 		CreatedAt:     common.DateToString(review.CreatedAt),
 		UpdatedAt:     common.DateToString(review.UpdatedAt),
@@ -344,7 +345,7 @@ func getReqReview(c echo.Context) error {
 		return c.JSON(404, MakeError("grev-004", "評価項目の取得に失敗しました"))
 	}
 
-	reviewData, er := makeReviewData(rid, user, review, tier, "grev-005")
+	reviewData, er := makeReviewData(rid, user, review, tier.PointType, "grev-005")
 	if er != nil {
 		return c.JSON(400, er)
 	}
@@ -352,4 +353,78 @@ func getReqReview(c echo.Context) error {
 		Review: reviewData,
 		Params: params,
 	})
+}
+
+func getReqReviewPairs(c echo.Context) error {
+	userId := c.QueryParam("userid")
+	word := c.QueryParam("word")
+	sortType := c.QueryParam("sorttype")
+	page, err := strconv.Atoi(c.QueryParam("page"))
+
+	if err != nil {
+		return c.JSON(400, MakeError("grvs-001", "ページ指定が異常です"))
+	} else if page < 0 {
+		return c.JSON(400, MakeError("grvs-002", "ページ指定が異常です"))
+	}
+
+	if !IsTierSortType(sortType) {
+		return c.JSON(400, MakeError("grvs-003", "ソートタイプが異常です"))
+	}
+
+	var cnt int64
+	user, tx := db.GetUser(userId, "*")
+	tx.Count(&cnt)
+	if cnt != 1 {
+		return c.JSON(404, MakeError("grvs-004", "指定されたユーザーは存在しません"))
+	}
+
+	var er *ErrorResponse
+	// TierIdは指定せず、ユーザーに紐づくレビューを取得
+	reviews, err := db.GetReviews(userId, "", word, sortType, page, postPageSize, true)
+	if err != nil {
+		return c.JSON(400, MakeError("grvs-005", "Tierが取得できません"))
+	}
+
+	var reviewData ReviewData
+	var pointType string
+	var params []ReviewParam
+	var parsedParams []ReviewParamData
+	reviewPairList := make([]ReviewDataWithParams, len(reviews))
+
+	for i, review := range reviews {
+		// Tier取得
+		tier, _ := db.GetTier(review.TierId, "point_type, factor_params")
+		if tier.PointType == "" {
+			pointType = "stars"
+		} else {
+			pointType = tier.PointType
+		}
+
+		err = json.Unmarshal([]byte(tier.FactorParams), &params)
+		if err != nil {
+			return c.JSON(400, MakeError("grvs-006", "評価項目が取得できません"))
+		}
+		parsedParams = make([]ReviewParamData, len(params))
+		for j, v := range params {
+			parsedParams[j] = ReviewParamData{
+				Name:    v.Name,
+				IsPoint: v.IsPoint,
+				Weight:  v.Weight,
+				Index:   j,
+			}
+		}
+
+		reviewData, er = makeReviewData(review.ReviewId, user, review, pointType, "grvs-007")
+
+		if er != nil {
+			c.JSON(400, *er)
+		}
+
+		// レビューデータの作成
+		reviewPairList[i] = ReviewDataWithParams{
+			Review: reviewData,
+			Params: parsedParams,
+		}
+	}
+	return c.JSON(200, reviewPairList)
 }

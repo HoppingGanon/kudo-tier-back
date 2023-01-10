@@ -319,7 +319,7 @@ func getReqTier(c echo.Context) error {
 
 	reviewDataList := make([]ReviewData, len(reviews))
 	for i, review := range reviews {
-		reviewData, err := makeReviewData(review.ReviewId, user, review, tier, "")
+		reviewData, err := makeReviewData(review.ReviewId, user, review, tier.PointType, "")
 		if err != nil {
 			return c.JSON(404, MakeError("gtir-004", "Tierに紐づくレビューが取得できませんでした"))
 		}

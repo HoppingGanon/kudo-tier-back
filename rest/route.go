@@ -22,5 +22,6 @@ func Route(e *echo.Echo) {
 	e.POST("/review", postReqReview)
 	e.GET("/review/:rid", getReqReview)
 	e.PATCH("/review/:rid", updateReqReview)
+	e.GET("/review-pairs", getReqReviewPairs)
 	e.GET("/latest-post-lists/:uid", getReqLatestPostLists)
 }
