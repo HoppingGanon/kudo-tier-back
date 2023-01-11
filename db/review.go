@@ -22,11 +22,11 @@ func GetReviews(userId string, tierId string, word string, sortType string, page
 	"createdAtAsc",
 	*/
 
-	tx := Db.Where("user_id = ?", userId)
+	tx := Db.Debug().Where("user_id = ?", userId)
 
 	if !includeSection {
 		// セクションを含めないでselectする
-		tx = tx.Select(ExcludeSelect(Review{}, "sections"))
+		tx = tx.Select(ExcludeSelect(Review{}, "Sections"))
 	}
 
 	if word != "" {

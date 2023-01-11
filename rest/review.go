@@ -287,10 +287,15 @@ func makeReviewData(rid string, user db.User, review db.Review, pointType string
 		imageUrl = os.Getenv("AP_BASE_URL") + "/" + review.IconUrl
 	}
 
+	var err error
 	var sections []SectionData
-	err := json.Unmarshal([]byte(review.Sections), &sections)
-	if err != nil {
-		return ReviewData{}, MakeError(code+"-01", "説明文の取得に失敗しました")
+	if review.Sections == "" {
+		sections = []SectionData{}
+	} else {
+		err = json.Unmarshal([]byte(review.Sections), &sections)
+		if err != nil {
+			return ReviewData{}, MakeError(code+"-01", "説明文の取得に失敗しました")
+		}
 	}
 
 	var factors []ReviewFactorData

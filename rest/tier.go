@@ -337,10 +337,15 @@ func makeTierData(tid string, user db.User, tier db.Tier, code string) (TierData
 		imageUrl2 = os.Getenv("AP_BASE_URL") + "/" + tier.ImageUrl
 	}
 
+	var err error
 	var parags []ParagData
-	err := json.Unmarshal([]byte(tier.Parags), &parags)
-	if err != nil {
-		return TierData{}, MakeError(code+"-01", "説明文の取得に失敗しました")
+	if tier.Parags == "" {
+		parags = []ParagData{}
+	} else {
+		err = json.Unmarshal([]byte(tier.Parags), &parags)
+		if err != nil {
+			return TierData{}, MakeError(code+"-01", "説明文の取得に失敗しました")
+		}
 	}
 
 	var params []ReviewParamData

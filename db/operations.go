@@ -136,6 +136,8 @@ func ArrangeSession() {
 	Db.Where("expired_time < ?", time.Now()).Delete(&Session{})
 }
 
+// 指定した項目を除外したSelect句を作成する
+// ただし、項目名はキャメルケースで指定すること
 func ExcludeSelect(baseStruct interface{}, columns ...string) string {
 	types := reflect.TypeOf(baseStruct)
 	var name string
