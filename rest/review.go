@@ -184,8 +184,8 @@ func postReqReview(c echo.Context) error {
 
 	err = db.CreateReview(session.UserId, reviewData.TierId, reviewId, reviewData.Name, reviewData.Title, path, string(factors), string(sections))
 	if err != nil {
-		db.WriteErrorLog(session.UserId, requestIp, "prev-010", "Tierの作成に失敗しました", err.Error())
-		return c.JSON(400, MakeError("prev-010", "Tierの作成に失敗しました"))
+		db.WriteErrorLog(session.UserId, requestIp, "prev-010", "レビューの更新に失敗しました", err.Error())
+		return c.JSON(400, MakeError("prev-010", "レビューの更新に失敗しました"))
 	}
 
 	db.WriteOperationLog(session.UserId, requestIp, "create review("+reviewId+")")
@@ -427,4 +427,38 @@ func getReqReviewPairs(c echo.Context) error {
 		}
 	}
 	return c.JSON(200, reviewPairList)
+}
+
+func deleteReviewReq(c echo.Context) error {
+	rid := c.Param("rid")
+
+	// セッションの存在チェック
+	session, err := db.CheckSession(c)
+	if err != nil {
+		return c.JSON(403, commonError.noSession)
+	}
+
+	requestIp := net.ParseIP(c.RealIP()).String()
+
+	var cnt int64
+	review, tx := db.GetReview(rid, "user_id")
+	tx.Count(&cnt)
+
+	if cnt != 1 {
+		return c.JSON(404, MakeError("drev-001", "レビューが存在しません"))
+	}
+
+	if review.UserId != session.UserId {
+		return c.JSON(403, commonError.userNotEqual)
+	}
+
+	err = db.DeleteReview(rid)
+
+	if err != nil {
+		db.WriteErrorLog(session.UserId, requestIp, "drev-002", "レビューの削除に失敗しました", err.Error())
+		return c.JSON(400, MakeError("drev-002", "レビューの削除に失敗しました"))
+	}
+
+	db.WriteOperationLog(session.UserId, requestIp, "delete review("+rid+")")
+	return c.NoContent(200)
 }

@@ -140,6 +140,11 @@ func UpdateReview(
 	return tx.Error
 }
 
+func DeleteReview(reviewId string) error {
+	tx := Db.Select("review_id").Where("review_id = ?", reviewId).Delete(&Review{})
+	return tx.Error
+}
+
 func DeleteReviews(tierId string) error {
 	tx := Db.Select("tier_id").Where("tier_id = ?", tierId).Delete(&Review{})
 	return tx.Error
