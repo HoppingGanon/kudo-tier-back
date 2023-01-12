@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
-	"os"
 	common "reviewmakerback/common"
 	db "reviewmakerback/db"
 	"strconv"
@@ -334,7 +333,7 @@ func getReqTier(c echo.Context) error {
 func makeTierData(tid string, user db.User, tier db.Tier, code string) (TierData, *ErrorResponse) {
 	imageUrl2 := ""
 	if tier.ImageUrl != "" {
-		imageUrl2 = os.Getenv("AP_BASE_URL") + "/" + tier.ImageUrl
+		imageUrl2 = tier.ImageUrl
 	}
 
 	var err error

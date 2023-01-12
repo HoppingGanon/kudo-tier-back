@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
-	"os"
 	common "reviewmakerback/common"
 	db "reviewmakerback/db"
 	"strconv"
@@ -284,7 +283,7 @@ func updateReqReview(c echo.Context) error {
 func makeReviewData(rid string, user db.User, review db.Review, pointType string, code string) (ReviewData, *ErrorResponse) {
 	imageUrl := ""
 	if review.IconUrl != "" {
-		imageUrl = os.Getenv("AP_BASE_URL") + "/" + review.IconUrl
+		imageUrl = review.IconUrl
 	}
 
 	var err error
