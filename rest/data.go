@@ -57,14 +57,8 @@ type InitUserData struct {
 	Accept  bool   `json:"accept"`  // 利用規約への同意
 }
 
-type NewUserData struct {
-	Name    string `json:"name"`    // 登録名
-	Profile string `json:"profile"` // 自己紹介文
-	UserId  string `json:"userId"`  // ユーザーID
-	IconUrl string `json:"iconUrl"` // TwitterのアイコンURL
-}
-
 type UserData struct {
+	UserId      string `json:"userId"`      // ユーザーID
 	IsSelf      bool   `json:"isSelf"`      // ログインしている自分自身のデータかどうか
 	IconUrl     string `json:"iconUrl"`     // TwitterのアイコンURL
 	Name        string `json:"name"`        // 登録名

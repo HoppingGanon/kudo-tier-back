@@ -68,11 +68,15 @@ func postReqUser(c echo.Context) error {
 	requestIp := net.ParseIP(c.RealIP()).String()
 	db.WriteOperationLog(uid, requestIp, "login")
 
-	return c.JSON(200, NewUserData{
-		UserId:  uid,
-		Name:    userData.Name,
-		Profile: userData.Profile,
-		IconUrl: twitterUser.Data.ProfileImageUrl,
+	return c.JSON(200, UserData{
+		UserId:      uid,
+		IsSelf:      true,
+		TwitterName: twitterUser.Data.Id,
+		Name:        userData.Name,
+		Profile:     userData.Profile,
+		IconUrl:     twitterUser.Data.ProfileImageUrl,
+		ReviewCount: 0,
+		TierCount:   0,
 	})
 }
 
@@ -132,6 +136,7 @@ func getReqUserData(c echo.Context) error {
 	}
 
 	res := UserData{
+		UserId:      user.UserId,
 		IsSelf:      existsSession && session.UserId == user.UserId,
 		IconUrl:     user.IconUrl,
 		TwitterName: "",
