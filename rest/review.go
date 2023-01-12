@@ -212,24 +212,24 @@ func updateReqReview(c echo.Context) error {
 	}
 
 	// 元レビュー検索
-	orgReview, tx := db.GetReview(rid, "review_id, user_id")
+	orgReview, tx := db.GetReview(rid, "*")
 	if tx.Error != nil {
-		return c.JSON(400, MakeError("prev-000", "対応するレビューが存在しません"))
+		return c.JSON(400, MakeError("prev-001", "レビューが存在しません"))
 	}
 	var cnt int64
 	tx.Count(&cnt)
 	if cnt != 1 {
-		return c.JSON(400, MakeError("prev-000", "レビューに対応するTierが存在しません"))
+		return c.JSON(400, MakeError("prev-002", "レビューが存在しません"))
 	}
 
 	// Tier検索
-	tier, tx := db.GetTier(rid, "tier_id, factor_params")
+	tier, tx := db.GetTier(orgReview.TierId, "tier_id, user_id, factor_params")
 	if tx.Error != nil {
-		return c.JSON(400, MakeError("prev-000", "レビューに対応するTierが存在しません"))
+		return c.JSON(400, MakeError("prev-003", "レビューに対応するTierが存在しません"))
 	}
 	tx.Count(&cnt)
 	if cnt != 1 {
-		return c.JSON(400, MakeError("prev-000", "レビューに対応するTierが存在しません"))
+		return c.JSON(400, MakeError("prev-004", "レビューに対応するTierが存在しません"))
 	}
 
 	// 編集ユーザーとTier・レビュー所有ユーザーチェック
@@ -240,7 +240,7 @@ func updateReqReview(c echo.Context) error {
 	var params []ReviewParamData
 	err = json.Unmarshal([]byte(tier.FactorParams), &params)
 	if err != nil {
-		return c.JSON(400, MakeError("prev-001", "Tierの情報取得に失敗しました"))
+		return c.JSON(400, MakeError("prev-005", "Tierの情報取得に失敗しました"))
 	}
 
 	f, e := validReview(reviewData, params, tier.PointType)
@@ -250,18 +250,18 @@ func updateReqReview(c echo.Context) error {
 
 	factors, err := json.Marshal(reviewData.ReviewFactors)
 	if err != nil {
-		return c.JSON(400, MakeError("prev-003", ""))
+		return c.JSON(400, MakeError("prev-006", ""))
 	}
 
 	sections, err := json.Marshal(reviewData.Sections)
 	if err != nil {
-		return c.JSON(400, MakeError("prev-004", ""))
+		return c.JSON(400, MakeError("prev-007", ""))
 	}
 
 	// 画像データの名前を生成
 	code, err := common.MakeRandomChars(16, orgReview.ReviewId)
 	if err != nil {
-		return c.JSON(400, MakeError("prev-005", "レビューアイコンの保存に失敗しました しばらく時間を開けて実行してください"))
+		return c.JSON(400, MakeError("prev-008", "レビューアイコンの保存に失敗しました しばらく時間を開けて実行してください"))
 	}
 	fname := "icon_" + code + ".jpg"
 
