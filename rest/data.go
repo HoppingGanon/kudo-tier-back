@@ -31,6 +31,7 @@ type Session struct {
 	IsNew           bool   `json:"isNew"`
 	TwitterName     string `json:"twitterName"`
 	TwitterUserName string `json:"twitterUserName"`
+	TwitterIconUrl  string `json:"twitterIconUrl"`
 	IconUrl         string `json:"iconUrl"`
 }
 
@@ -51,16 +52,17 @@ type TwitterUser struct {
 	Data TwitterUserData `json:"data"`
 }
 
-type InitUserData struct {
-	Name    string `json:"name"`    // 登録名
-	Profile string `json:"profile"` // 自己紹介文
-	Accept  bool   `json:"accept"`  // 利用規約への同意
+type UserEdittingData struct {
+	Name       string `json:"name"`       // 登録名
+	Profile    string `json:"profile"`    // 自己紹介文
+	Accept     bool   `json:"accept"`     // 利用規約への同意(初回のみ)
+	IconBase64 string `json:"iconBase64"` // アイコンデータbase64
 }
 
 type UserData struct {
 	UserId      string `json:"userId"`      // ユーザーID
 	IsSelf      bool   `json:"isSelf"`      // ログインしている自分自身のデータかどうか
-	IconUrl     string `json:"iconUrl"`     // TwitterのアイコンURL
+	IconUrl     string `json:"iconUrl"`     // アイコンURL
 	Name        string `json:"name"`        // 登録名
 	Profile     string `json:"profile"`     // 自己紹介文
 	TwitterName string `json:"twitterName"` // TwitterID(ログイン時のみ)

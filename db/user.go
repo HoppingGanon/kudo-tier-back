@@ -30,18 +30,18 @@ func ExistsUserTId(tid string) bool {
 	return cnt == 1
 }
 
-func CreateUser(TwitterName string, name string, profile string, iconUrl string) (string, error) {
+func CreateUser(TwitterName string, name string, profile string, iconUrl string) (User, error) {
 	var id string
 	var err error
 	if ExistsUserTId(TwitterName) {
-		return "", errors.New("指定されたTwitterIDは登録済みです")
+		return User{}, errors.New("指定されたTwitterIDは登録済みです")
 	}
 
 	for i := 0; i < retryCreateCnt; i++ {
 		// ランダムな文字列を生成して、IDにする
 		id, err = common.MakeRandomChars(idSize, TwitterName)
 		if err != nil {
-			return "", err
+			return User{}, err
 		}
 		if !ExistsUser(id) {
 			user := User{
@@ -54,11 +54,23 @@ func CreateUser(TwitterName string, name string, profile string, iconUrl string)
 			tx := Db.Create(&user)
 
 			if err != nil {
-				return "", tx.Error
+				return User{}, tx.Error
 			}
 
-			return id, nil
+			return user, nil
 		}
 	}
-	return "", errors.New("ユーザー作成の試行回数が上限に達しました")
+	return User{}, errors.New("ユーザー作成の試行回数が上限に達しました")
+}
+
+func UpdateUser(user User, name string, profile string, iconUrl string) error {
+	var tx *gorm.DB
+	user.Name = name
+	user.Profile = profile
+	user.IconUrl = iconUrl
+	if iconUrl != "nochange" {
+		user.IconUrl = iconUrl
+	}
+	tx = Db.Save(&user)
+	return tx.Error
 }

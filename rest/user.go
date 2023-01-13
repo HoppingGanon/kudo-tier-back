@@ -9,6 +9,7 @@ import (
 
 	"github.com/labstack/echo"
 
+	common "reviewmakerback/common"
 	db "reviewmakerback/db"
 	"unicode/utf8"
 )
@@ -30,7 +31,7 @@ func postReqUser(c echo.Context) error {
 		return c.String(400, "JSONデータが不正です")
 	}
 
-	var userData InitUserData
+	var userData UserEdittingData
 	err = json.Unmarshal(b, &userData)
 	if err != nil {
 		return c.String(400, "不正なユーザーデータです")
@@ -60,21 +61,39 @@ func postReqUser(c echo.Context) error {
 		return c.String(403, "Twitterから取得したユーザー情報が不正です")
 	}
 
-	uid, err := db.CreateUser(twitterUser.Data.Id, userData.Name, userData.Profile, twitterUser.Data.ProfileImageUrl)
+	user, err := db.CreateUser(twitterUser.Data.Id, userData.Name, userData.Profile, "")
 	if err != nil {
 		return c.String(400, "ユーザーの作成に失敗しました")
 	}
 
+	// 画像データの名前を生成
+	code, err := common.MakeRandomChars(16, user.UserId)
+	if err != nil {
+		return c.JSON(400, MakeError("prev-008", "レビューアイコンの保存に失敗しました しばらく時間を開けて実行してください"))
+	}
+	fname := "icon_" + code + ".jpg"
+
+	// 画像の保存
+	path, er := savePicture(user.UserId, "user", "user", fname, "", userData.IconBase64, "prev-009", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
+	if er != nil {
+		return c.JSON(400, er)
+	}
+
+	println("userid:" + user.UserId)
+	println("path:" + path)
+
+	db.UpdateUser(user, userData.Name, userData.Profile, path)
+
 	requestIp := net.ParseIP(c.RealIP()).String()
-	db.WriteOperationLog(uid, requestIp, "login")
+	db.WriteOperationLog(user.UserId, requestIp, "login")
 
 	return c.JSON(200, UserData{
-		UserId:      uid,
+		UserId:      user.UserId,
 		IsSelf:      true,
 		TwitterName: twitterUser.Data.Id,
 		Name:        userData.Name,
 		Profile:     userData.Profile,
-		IconUrl:     twitterUser.Data.ProfileImageUrl,
+		IconUrl:     path,
 		ReviewCount: 0,
 		TierCount:   0,
 	})
