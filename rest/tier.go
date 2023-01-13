@@ -148,7 +148,10 @@ func postReqTier(c echo.Context) error {
 	requestIp := net.ParseIP(c.RealIP()).String()
 
 	// Bodyの読み取り
-	b, _ := ioutil.ReadAll(c.Request().Body)
+	b, err := ioutil.ReadAll(c.Request().Body)
+	if err != nil {
+		return c.JSON(400, commonError.unreadableBody)
+	}
 	var tierData TierEditingData
 	err = json.Unmarshal(b, &tierData)
 	if err != nil {
@@ -205,7 +208,7 @@ func postReqTier(c echo.Context) error {
 		return c.JSON(400, MakeError("ptir-008", "Tierの作成に失敗しました"))
 	}
 
-	db.WriteOperationLog(session.UserId, requestIp, "create tier("+tierId+")")
+	db.WriteOperationLog(session.UserId, requestIp, "ptir", tierId)
 	return c.String(201, tierId)
 }
 
@@ -221,7 +224,10 @@ func updateReqTier(c echo.Context) error {
 	requestIp := net.ParseIP(c.RealIP()).String()
 
 	// Bodyの読み取り
-	b, _ := ioutil.ReadAll(c.Request().Body)
+	b, err := ioutil.ReadAll(c.Request().Body)
+	if err != nil {
+		return c.JSON(400, commonError.unreadableBody)
+	}
 	var tierData TierEditingData
 	err = json.Unmarshal(b, &tierData)
 	if err != nil {
@@ -285,7 +291,7 @@ func updateReqTier(c echo.Context) error {
 		return c.JSON(400, MakeError("utir-008", "Tierの作成に失敗しました"))
 	}
 
-	db.WriteOperationLog(session.UserId, requestIp, "update tier("+tid+")")
+	db.WriteOperationLog(session.UserId, requestIp, "utir", tid)
 	return c.String(200, tid)
 }
 
@@ -451,6 +457,6 @@ func deleteReqTier(c echo.Context) error {
 		return c.JSON(400, MakeError("dtir-003", "Tierに紐づくレビューの削除に失敗しました"))
 	}
 
-	db.WriteOperationLog(session.UserId, requestIp, "delete tier("+tid+")")
+	db.WriteOperationLog(session.UserId, requestIp, "dtir", tid)
 	return c.NoContent(200)
 }

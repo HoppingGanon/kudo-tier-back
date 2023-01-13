@@ -115,7 +115,10 @@ func postReqReview(c echo.Context) error {
 	requestIp := net.ParseIP(c.RealIP()).String()
 
 	// Bodyの読み取り
-	b, _ := ioutil.ReadAll(c.Request().Body)
+	b, err := ioutil.ReadAll(c.Request().Body)
+	if err != nil {
+		return c.JSON(400, commonError.unreadableBody)
+	}
 	var reviewData ReviewEditingData
 	err = json.Unmarshal(b, &reviewData)
 	if err != nil {
@@ -187,7 +190,7 @@ func postReqReview(c echo.Context) error {
 		return c.JSON(400, MakeError("prev-010", "レビューの更新に失敗しました"))
 	}
 
-	db.WriteOperationLog(session.UserId, requestIp, "create review("+reviewId+")")
+	db.WriteOperationLog(session.UserId, requestIp, "prev", reviewId)
 	return c.String(201, reviewId)
 }
 
@@ -203,7 +206,10 @@ func updateReqReview(c echo.Context) error {
 	requestIp := net.ParseIP(c.RealIP()).String()
 
 	// Bodyの読み取り
-	b, _ := ioutil.ReadAll(c.Request().Body)
+	b, err := ioutil.ReadAll(c.Request().Body)
+	if err != nil {
+		return c.JSON(400, commonError.unreadableBody)
+	}
 	var reviewData ReviewEditingData
 	err = json.Unmarshal(b, &reviewData)
 	if err != nil {
@@ -213,22 +219,22 @@ func updateReqReview(c echo.Context) error {
 	// 元レビュー検索
 	orgReview, tx := db.GetReview(rid, "*")
 	if tx.Error != nil {
-		return c.JSON(400, MakeError("prev-001", "レビューが存在しません"))
+		return c.JSON(400, MakeError("urev-001", "レビューが存在しません"))
 	}
 	var cnt int64
 	tx.Count(&cnt)
 	if cnt != 1 {
-		return c.JSON(400, MakeError("prev-002", "レビューが存在しません"))
+		return c.JSON(400, MakeError("urev-002", "レビューが存在しません"))
 	}
 
 	// Tier検索
 	tier, tx := db.GetTier(orgReview.TierId, "tier_id, user_id, factor_params")
 	if tx.Error != nil {
-		return c.JSON(400, MakeError("prev-003", "レビューに対応するTierが存在しません"))
+		return c.JSON(400, MakeError("urev-003", "レビューに対応するTierが存在しません"))
 	}
 	tx.Count(&cnt)
 	if cnt != 1 {
-		return c.JSON(400, MakeError("prev-004", "レビューに対応するTierが存在しません"))
+		return c.JSON(400, MakeError("urev-004", "レビューに対応するTierが存在しません"))
 	}
 
 	// 編集ユーザーとTier・レビュー所有ユーザーチェック
@@ -239,7 +245,7 @@ func updateReqReview(c echo.Context) error {
 	var params []ReviewParamData
 	err = json.Unmarshal([]byte(tier.FactorParams), &params)
 	if err != nil {
-		return c.JSON(400, MakeError("prev-005", "Tierの情報取得に失敗しました"))
+		return c.JSON(400, MakeError("urev-005", "Tierの情報取得に失敗しました"))
 	}
 
 	f, e := validReview(reviewData, params, tier.PointType)
@@ -249,34 +255,34 @@ func updateReqReview(c echo.Context) error {
 
 	factors, err := json.Marshal(reviewData.ReviewFactors)
 	if err != nil {
-		return c.JSON(400, MakeError("prev-006", ""))
+		return c.JSON(400, MakeError("urev-006", ""))
 	}
 
 	sections, err := json.Marshal(reviewData.Sections)
 	if err != nil {
-		return c.JSON(400, MakeError("prev-007", ""))
+		return c.JSON(400, MakeError("urev-007", ""))
 	}
 
 	// 画像データの名前を生成
 	code, err := common.MakeRandomChars(16, orgReview.ReviewId)
 	if err != nil {
-		return c.JSON(400, MakeError("prev-008", "レビューアイコンの保存に失敗しました しばらく時間を開けて実行してください"))
+		return c.JSON(400, MakeError("urev-008", "レビューアイコンの保存に失敗しました しばらく時間を開けて実行してください"))
 	}
 	fname := "icon_" + code + ".jpg"
 
 	// 画像の保存
-	path, er := savePicture(session.UserId, "review", orgReview.ReviewId, fname, orgReview.IconUrl, reviewData.IconBase64, "prev-006", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
+	path, er := savePicture(session.UserId, "review", orgReview.ReviewId, fname, orgReview.IconUrl, reviewData.IconBase64, "urev-006", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
 	if er != nil {
 		return c.JSON(400, er)
 	}
 
 	err = db.UpdateReview(orgReview, reviewData.Name, reviewData.Title, path, string(factors), string(sections))
 	if err != nil {
-		db.WriteErrorLog(session.UserId, requestIp, "prev-007", "Tierの作成に失敗しました", err.Error())
-		return c.JSON(400, MakeError("prev-007", "Tierの作成に失敗しました"))
+		db.WriteErrorLog(session.UserId, requestIp, "urev-007", "Tierの作成に失敗しました", err.Error())
+		return c.JSON(400, MakeError("urev-007", "Tierの作成に失敗しました"))
 	}
 
-	db.WriteOperationLog(session.UserId, requestIp, "update review("+orgReview.ReviewId+")")
+	db.WriteOperationLog(session.UserId, requestIp, "urev", orgReview.ReviewId)
 	return c.String(201, orgReview.ReviewId)
 }
 
@@ -463,6 +469,6 @@ func deleteReviewReq(c echo.Context) error {
 		return c.JSON(400, MakeError("drev-002", "レビューの削除に失敗しました"))
 	}
 
-	db.WriteOperationLog(session.UserId, requestIp, "delete review("+rid+")")
+	db.WriteOperationLog(session.UserId, requestIp, "drev", rid)
 	return c.NoContent(200)
 }

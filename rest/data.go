@@ -52,22 +52,30 @@ type TwitterUser struct {
 	Data TwitterUserData `json:"data"`
 }
 
-type UserEdittingData struct {
+type UserCreatingData struct {
 	Name       string `json:"name"`       // 登録名
 	Profile    string `json:"profile"`    // 自己紹介文
 	Accept     bool   `json:"accept"`     // 利用規約への同意(初回のみ)
 	IconBase64 string `json:"iconBase64"` // アイコンデータbase64
 }
 
+type UserEditingData struct {
+	Name             string `json:"name"`             // 登録名
+	Profile          string `json:"profile"`          // 自己紹介文
+	IconBase64       string `json:"iconBase64"`       // アイコンデータbase64
+	AllowTwitterLink bool   `json:"allowTwitterLink"` // Twitterへのリンク許可
+}
+
 type UserData struct {
-	UserId      string `json:"userId"`      // ユーザーID
-	IsSelf      bool   `json:"isSelf"`      // ログインしている自分自身のデータかどうか
-	IconUrl     string `json:"iconUrl"`     // アイコンURL
-	Name        string `json:"name"`        // 登録名
-	Profile     string `json:"profile"`     // 自己紹介文
-	TwitterName string `json:"twitterName"` // TwitterID(ログイン時のみ)
-	ReviewCount int64  `json:"reviewCount"` // 今までに投稿したレビュー数
-	TierCount   int64  `json:"tierCount"`   // 今までに投稿したTier数
+	UserId           string `json:"userId"`           // ユーザーID
+	IsSelf           bool   `json:"isSelf"`           // ログインしている自分自身のデータかどうか
+	IconUrl          string `json:"iconUrl"`          // アイコンURL
+	Name             string `json:"name"`             // 登録名
+	Profile          string `json:"profile"`          // 自己紹介文
+	AllowTwitterLink bool   `json:"allowTwitterLink"` // Twitterへのリンク許可
+	TwitterName      string `json:"twitterName"`      // TwitterID(自分自身でのログイン時およびTwitter連携を許可した時のみ開示)
+	ReviewCount      int64  `json:"reviewCount"`      // 今までに投稿したレビュー数
+	TierCount        int64  `json:"tierCount"`        // 今までに投稿したTier数
 }
 
 type TierData struct {

@@ -21,12 +21,13 @@ const retryCreateCnt = 3
 // 各IDの桁数
 const idSize = 16
 
-func WriteOperationLog(id string, ipAddress string, operation string) {
+func WriteOperationLog(id string, ipAddress string, operation string, content string) {
 	// ログを記録
 	log := OperationLog{
 		UserId:    id,
 		IpAddress: ipAddress,
 		Operation: operation,
+		Content:   content,
 		CreatedAt: time.Now(),
 	}
 

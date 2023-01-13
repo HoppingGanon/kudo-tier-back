@@ -13,6 +13,7 @@ func Route(e *echo.Echo) {
 	e.DELETE("/auth/session", delReqSession)
 	e.POST("/user", postReqUser)
 	e.GET("/user/:uid", getReqUserData)
+	e.PATCH("/user/:uid", updateReqUser)
 	e.POST("/tier", postReqTier)
 	e.GET("/tier/:tid", getReqTier)
 	e.GET("/"+os.Getenv("AP_FILE_PATH")+"/:uid/:method/:id/:fname", getUserFile)

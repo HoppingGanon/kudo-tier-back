@@ -4,14 +4,12 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net"
-	"net/http"
 	"strconv"
 
 	"github.com/labstack/echo"
 
 	common "reviewmakerback/common"
 	db "reviewmakerback/db"
-	"unicode/utf8"
 )
 
 const latestPostMax = 100
@@ -21,55 +19,54 @@ func postReqUser(c echo.Context) error {
 	// セッションの存在チェック
 	session, err := db.CheckSession(c)
 	if err != nil {
-		return c.String(403, "セッションがありません")
+		return c.JSON(403, commonError.noSession)
 	}
 
 	// Bodyの読み取り
 	b, err := ioutil.ReadAll(c.Request().Body)
-
 	if err != nil {
-		return c.String(400, "JSONデータが不正です")
+		return c.JSON(400, commonError.unreadableBody)
 	}
 
-	var userData UserEdittingData
+	var userData UserCreatingData
 	err = json.Unmarshal(b, &userData)
 	if err != nil {
-		return c.String(400, "不正なユーザーデータです")
+		return c.JSON(400, commonError.unreadableBody)
 	}
 
 	// バリデーションチェック
 	if !userData.Accept {
-		return c.String(400, "利用規約への同意は必須です")
+		return c.JSON(400, MakeError("pusr-001", "利用規約への同意は必須です"))
 	}
-	cnt := utf8.RuneCountInString(userData.Name)
-	if cnt < 1 || cnt > 64 {
-		return c.String(400, "名前が不正です")
+	f, er := validText("表示名", "pusr-002", userData.Name, true, 0, 50, "", "")
+	if !f {
+		return c.JSON(400, er)
 	}
-	cnt = utf8.RuneCountInString(userData.Profile)
-	if cnt > 200 {
-		return c.String(400, "プロフィールが不正です")
+	f, er = validText("プロフィール", "pusr-003", userData.Profile, false, 0, 200, "", "")
+	if !f {
+		return c.JSON(400, er)
 	}
 
 	// Twitterからユーザー情報の取得
 	b, err = getTwitterApi("https://api.twitter.com/2/users/me?user.fields=profile_image_url", session.TwitterToken)
 	if err != nil {
-		return c.String(403, "Twitterからユーザー情報が取得できませんでした")
+		return c.JSON(403, MakeError("pusr-004", "Twitterからユーザー情報が取得できませんでした"))
 	}
 	var twitterUser TwitterUser
 	err = json.Unmarshal(b, &twitterUser)
 	if err != nil {
-		return c.String(403, "Twitterから取得したユーザー情報が不正です")
+		return c.JSON(403, MakeError("pusr-005", "Twitterから取得したユーザー情報が不正です"))
 	}
 
 	user, err := db.CreateUser(twitterUser.Data.Id, userData.Name, userData.Profile, "")
 	if err != nil {
-		return c.String(400, "ユーザーの作成に失敗しました")
+		return c.JSON(400, MakeError("pusr-006", "ユーザーの作成に失敗しました"))
 	}
 
 	// 画像データの名前を生成
 	code, err := common.MakeRandomChars(16, user.UserId)
 	if err != nil {
-		return c.JSON(400, MakeError("prev-008", "レビューアイコンの保存に失敗しました しばらく時間を開けて実行してください"))
+		return c.JSON(400, MakeError("pusr-007", "レビューアイコンの保存に失敗しました しばらく時間を開けて実行してください"))
 	}
 	fname := "icon_" + code + ".jpg"
 
@@ -79,57 +76,90 @@ func postReqUser(c echo.Context) error {
 		return c.JSON(400, er)
 	}
 
-	println("userid:" + user.UserId)
-	println("path:" + path)
-
-	db.UpdateUser(user, userData.Name, userData.Profile, path)
+	db.UpdateUser(user, userData.Name, userData.Profile, path, false)
 
 	requestIp := net.ParseIP(c.RealIP()).String()
-	db.WriteOperationLog(user.UserId, requestIp, "login")
+	db.WriteOperationLog(user.UserId, requestIp, "pusr", "")
 
 	return c.JSON(200, UserData{
-		UserId:      user.UserId,
-		IsSelf:      true,
-		TwitterName: twitterUser.Data.Id,
-		Name:        userData.Name,
-		Profile:     userData.Profile,
-		IconUrl:     path,
-		ReviewCount: 0,
-		TierCount:   0,
+		UserId:           user.UserId,
+		IsSelf:           true,
+		TwitterName:      twitterUser.Data.Id,
+		Name:             userData.Name,
+		Profile:          userData.Profile,
+		IconUrl:          path,
+		AllowTwitterLink: false,
+		ReviewCount:      0,
+		TierCount:        0,
 	})
 }
 
 // ユーザーデータの更新のためのUPDATEリクエストの処理
 func updateReqUser(c echo.Context) error {
-
-	// リクエストのURIからIDを取得
-	requestId := c.Param("id")
-
 	// セッションの存在チェック
 	session, err := db.CheckSession(c)
 	if err != nil {
-		return c.String(404, "session not exists")
+		return c.JSON(403, commonError.noSession)
 	}
 
-	// リクエストのIDとセッションのIDを比較して、一致してなければエラー
-	if requestId != session.SessionID {
-		return c.String(403, "Unauthorized operation")
-	}
+	uid := c.Param("uid")
 
-	// Twitterからユーザー情報の取得
-	b, err := getTwitterApi("https://api.twitter.com/2/users/me?user.fields=profile_image_url", session.TwitterToken)
+	// Bodyの読み取り
+	b, err := ioutil.ReadAll(c.Request().Body)
 	if err != nil {
-		return c.String(http.StatusForbidden, "Twitterからユーザー情報が取得できませんでした")
+		return c.JSON(400, commonError.unreadableBody)
 	}
-	var twitterUser TwitterUser
-	err = json.Unmarshal(b, &twitterUser)
+
+	var userData UserEditingData
+	err = json.Unmarshal(b, &userData)
 	if err != nil {
-		return c.String(http.StatusForbidden, "Twitterから取得したユーザー情報が不正です")
+		return c.JSON(400, commonError.unreadableBody)
 	}
 
-	// db.Db.Update()
+	// 編集ユーザーとTier所有ユーザーチェック
+	if session.UserId != uid {
+		return c.JSON(403, commonError.userNotEqual)
+	}
 
-	return c.String(200, "")
+	// バリデーションチェック
+	f, er := validText("表示名", "uusr-001", userData.Name, true, 0, 50, "", "")
+	if !f {
+		return c.JSON(400, er)
+	}
+	f, er = validText("プロフィール", "uusr-002", userData.Profile, false, 0, 200, "", "")
+	if !f {
+		return c.JSON(400, er)
+	}
+
+	var cnt int64
+	user, tx := db.GetUser(uid, "*")
+	if err != nil {
+		return c.JSON(400, MakeError("uusr-003", "ユーザーの更新に失敗しました"))
+	}
+	tx.Count(&cnt)
+	if cnt != 1 {
+		return c.JSON(400, MakeError("uusr-004", "ユーザーの更新に失敗しました"))
+	}
+
+	// 画像データの名前を生成
+	code, err := common.MakeRandomChars(16, user.UserId)
+	if err != nil {
+		return c.JSON(400, MakeError("uusr-005", "レビューアイコンの保存に失敗しました しばらく時間を開けて実行してください"))
+	}
+	fname := "icon_" + code + ".jpg"
+
+	// 画像の保存
+	path, er := savePicture(user.UserId, "user", "user", fname, user.IconUrl, userData.IconBase64, "uusr-006", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
+	if er != nil {
+		return c.JSON(400, er)
+	}
+
+	db.UpdateUser(user, userData.Name, userData.Profile, path, userData.AllowTwitterLink)
+
+	requestIp := net.ParseIP(c.RealIP()).String()
+	db.WriteOperationLog(user.UserId, requestIp, "uusr", "")
+
+	return c.String(200, uid)
 }
 
 // ユーザーデータを取得するGETリクエストの処理
@@ -154,26 +184,30 @@ func getReqUserData(c echo.Context) error {
 		return c.JSON(404, MakeError("gusr-001", "ユーザーが存在しません"))
 	}
 
-	res := UserData{
-		UserId:      user.UserId,
-		IsSelf:      existsSession && session.UserId == user.UserId,
-		IconUrl:     user.IconUrl,
-		TwitterName: "",
-		Name:        user.Name,
-		Profile:     user.Profile,
-		ReviewCount: db.GetReviewCountInUser(user.UserId),
-		TierCount:   db.GetTierCountInUser(user.UserId),
+	userData := UserData{
+		UserId:           user.UserId,
+		IsSelf:           existsSession && session.UserId == user.UserId,
+		IconUrl:          user.IconUrl,
+		TwitterName:      "",
+		Name:             user.Name,
+		Profile:          user.Profile,
+		AllowTwitterLink: user.AllowTwitterLink,
+		ReviewCount:      db.GetReviewCountInUser(user.UserId),
+		TierCount:        db.GetTierCountInUser(user.UserId),
 	}
 
 	if err == nil && uid == session.UserId {
 		// 送信元ユーザーと参照先ユーザーが同じ場合
-		res.IsSelf = true
-		res.TwitterName = user.TwitterName
+		userData.IsSelf = true
+		userData.TwitterName = user.TwitterName
 	} else {
 		// 送信元ユーザーと参照先ユーザーが異なる場合またはそもそもセッションが無い場合
-		res.IsSelf = false
+		userData.IsSelf = false
+		if userData.AllowTwitterLink {
+			userData.TwitterName = user.TwitterName
+		}
 	}
-	return c.JSON(200, res)
+	return c.JSON(200, userData)
 }
 
 func getReqLatestPostLists(c echo.Context) error {

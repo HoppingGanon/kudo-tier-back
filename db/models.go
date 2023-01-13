@@ -24,13 +24,14 @@ type Session struct {
 
 // ユーザーデータ
 type User struct {
-	UserId      string    `gorm:"primaryKey;not null"`       // ランダムで決定するユーザー固有のID
-	TwitterName string    `gorm:"index:unique;not null"`     // ユーザーのTwitterID
-	IconUrl     string    `gorm:"not null;default:no image"` // TwitterのアイコンURL
-	Name        string    `gorm:"not null;default:no name"`  // 登録名
-	Profile     string    `gorm:"not null"`                  // 自己紹介文
-	CreatedAt   time.Time `gorm:""`                          // 作成日
-	UpdatedAt   time.Time `gorm:""`                          // 更新日
+	UserId           string    `gorm:"primaryKey;not null"`       // ランダムで決定するユーザー固有のID
+	TwitterName      string    `gorm:"index:unique;not null"`     // TwitterID(自分自身でのログイン時およびTwitter連携を許可した時のみ開示)
+	IconUrl          string    `gorm:"not null;default:no image"` // TwitterのアイコンURL
+	Name             string    `gorm:"not null;default:no name"`  // 登録名
+	Profile          string    `gorm:"not null"`                  // 自己紹介文
+	AllowTwitterLink bool      `gorm:"not null;default:false"`    // Twitterへのリンク許可
+	CreatedAt        time.Time `gorm:""`                          // 作成日
+	UpdatedAt        time.Time `gorm:""`                          // 更新日
 }
 
 // アクセスログ
@@ -38,7 +39,8 @@ type User struct {
 type OperationLog struct {
 	UserId    string    `gorm:"not null"`                 // ユーザーデータの固有ID
 	IpAddress string    `gorm:"not null;default:0.0.0.0"` // セッション確立時のIPアドレス
-	Operation string    `gorm:"not null"`                 // 操作内容
+	Operation string    `gorm:"not null"`                 // 操作対象(エラーコードに準じる)
+	Content   string    `gorm:"not null"`                 // 操作内容
 	CreatedAt time.Time `gorm:"not null"`                 // 作成日
 }
 

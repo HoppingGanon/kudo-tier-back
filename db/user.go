@@ -45,11 +45,12 @@ func CreateUser(TwitterName string, name string, profile string, iconUrl string)
 		}
 		if !ExistsUser(id) {
 			user := User{
-				TwitterName: TwitterName,
-				UserId:      id,
-				Name:        name,
-				Profile:     profile,
-				IconUrl:     iconUrl,
+				TwitterName:      TwitterName,
+				UserId:           id,
+				Name:             name,
+				Profile:          profile,
+				IconUrl:          iconUrl,
+				AllowTwitterLink: false,
 			}
 			tx := Db.Create(&user)
 
@@ -63,14 +64,14 @@ func CreateUser(TwitterName string, name string, profile string, iconUrl string)
 	return User{}, errors.New("ユーザー作成の試行回数が上限に達しました")
 }
 
-func UpdateUser(user User, name string, profile string, iconUrl string) error {
+func UpdateUser(user User, name string, profile string, iconUrl string, allowTwitterLink bool) error {
 	var tx *gorm.DB
 	user.Name = name
 	user.Profile = profile
-	user.IconUrl = iconUrl
 	if iconUrl != "nochange" {
 		user.IconUrl = iconUrl
 	}
+	user.AllowTwitterLink = allowTwitterLink
 	tx = Db.Save(&user)
 	return tx.Error
 }
