@@ -13,6 +13,18 @@ const maxSessionPerIp = 16
 // codeVeriferの文字数
 const codeVeriferCnt = 64
 
+type UserValidation struct {
+	// ユーザー表示名の最大文字数
+	nameLenMax int
+	// プロフィールの最大文字数
+	profileLenMax int
+}
+
+var userValidation = UserValidation{
+	nameLenMax:    50,
+	profileLenMax: 400,
+}
+
 type SectionValidation struct {
 	// セクションタイトルの最大文字数
 	sectionTitleLen int
@@ -78,7 +90,7 @@ func validText(title string, code string, text string, required bool, min int, m
 	} else if max > 0 && utf8.RuneCountInString(text) > max {
 		// 最大文字数
 		return false, MakeError(code+"-02", fmt.Sprintf("%sは%d文字以下で入力する必要があります", title, max))
-	} else if reg != "" && regexp.MustCompile(reg).MatchString(text) {
+	} else if reg != "" && !regexp.MustCompile(reg).MatchString(text) {
 		// 正規表現
 		return false, MakeError(code+"-03", fmt.Sprintf("%sは%sで入力する必要があります", title, regMessage))
 	}

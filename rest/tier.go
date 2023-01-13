@@ -66,13 +66,13 @@ func validTier(tierData TierEditingData) (bool, *ErrorResponse) {
 		} else {
 			if v.Type == "text" {
 				// 説明文
-				f, e := validText("説明文", "vtir-005", v.Body, true, -1, sectionValidation.paragTextLenMax, "", "")
+				f, e := validText("説明文", "vtir-005", v.Body, false, -1, sectionValidation.paragTextLenMax, "", "")
 				if !f {
 					return f, e
 				}
 			} else if v.Type == "twitterLink" {
 				// Twitterリンク
-				f, e := validText("Twitterリンク", "vtir-006", v.Body, true, -1, sectionValidation.paragLinkLenMax, "", "")
+				f, e := validText("Twitterリンク", "vtir-006", v.Body, true, -1, sectionValidation.paragLinkLenMax, `^https:\/\/twitter\.com\/.*`, "正しい文字列")
 				if !f {
 					return f, e
 				}

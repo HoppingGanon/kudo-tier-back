@@ -38,11 +38,11 @@ func postReqUser(c echo.Context) error {
 	if !userData.Accept {
 		return c.JSON(400, MakeError("pusr-001", "利用規約への同意は必須です"))
 	}
-	f, er := validText("表示名", "pusr-002", userData.Name, true, 0, 50, "", "")
+	f, er := validText("表示名", "pusr-002", userData.Name, true, 0, userValidation.nameLenMax, "", "")
 	if !f {
 		return c.JSON(400, er)
 	}
-	f, er = validText("プロフィール", "pusr-003", userData.Profile, false, 0, 200, "", "")
+	f, er = validText("プロフィール", "pusr-003", userData.Profile, false, 0, userValidation.profileLenMax, "", "")
 	if !f {
 		return c.JSON(400, er)
 	}
@@ -122,11 +122,11 @@ func updateReqUser(c echo.Context) error {
 	}
 
 	// バリデーションチェック
-	f, er := validText("表示名", "uusr-001", userData.Name, true, 0, 50, "", "")
+	f, er := validText("表示名", "uusr-001", userData.Name, true, 0, userValidation.nameLenMax, "", "")
 	if !f {
 		return c.JSON(400, er)
 	}
-	f, er = validText("プロフィール", "uusr-002", userData.Profile, false, 0, 200, "", "")
+	f, er = validText("プロフィール", "uusr-002", userData.Profile, false, 0, userValidation.profileLenMax, "", "")
 	if !f {
 		return c.JSON(400, er)
 	}
