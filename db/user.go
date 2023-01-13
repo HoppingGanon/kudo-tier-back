@@ -26,7 +26,7 @@ func ExistsUserTId(tid string) bool {
 	var user User
 	var cnt int64
 
-	Db.Where("twitter_name = ?", tid).First(&user).Count(&cnt)
+	Db.Where("twitter_name = ?", tid).Find(&user).Count(&cnt)
 	return cnt == 1
 }
 
