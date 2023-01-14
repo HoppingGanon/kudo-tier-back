@@ -14,6 +14,10 @@ func GetReview(rid string, selectText string) (Review, *gorm.DB) {
 }
 
 // 検索条件に従ってレビュー配列を取得
+// tierId 空文字列になるとTierの制約なし
+// word 空文字列になると検索無し
+// pageSize 省略不可
+// sortType 空文字列にすると順序指定なし
 func GetReviews(userId string, tierId string, word string, sortType string, page int, pageSize int, includeSection bool) ([]Review, error) {
 	/**
 	"updatedAtDesc",

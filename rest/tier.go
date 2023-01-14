@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/labstack/echo"
+	"gorm.io/gorm"
 )
 
 // 一度に取得可能なTier/レビュー数
@@ -252,20 +253,20 @@ func updateReqTier(c echo.Context) error {
 		return c.JSON(400, e)
 	}
 
-	params, err := json.Marshal(tierData.ReviewFactorParams)
-	if err != nil {
-		return c.JSON(400, MakeError("utir-002", "重みの登録に失敗しました"))
+	// 新しく保存する対象の評価項目を定義する
+	newParamsLen := len(tierData.ReviewFactorParams)
+	newParams := make([]ReviewParam, newParamsLen)
+	for i, param := range tierData.ReviewFactorParams {
+		newParams[i] = ReviewParam{
+			Name:    param.Name,
+			IsPoint: param.IsPoint,
+			Weight:  param.Weight,
+		}
 	}
 
-	var params2 []ReviewParam
-	err = json.Unmarshal([]byte(params), &params2)
+	newParamsStr, err := json.Marshal(newParams)
 	if err != nil {
-		return c.JSON(400, MakeError("utir-003", "重みの登録に失敗しました"))
-	}
-
-	params3, err := json.Marshal(params2)
-	if err != nil {
-		return c.JSON(400, MakeError("utir-004", "重みの登録に失敗しました"))
+		return c.JSON(400, MakeError("utir-004", "評価項目の登録に失敗しました"))
 	}
 
 	parags, err := json.Marshal(tierData.Parags)
@@ -280,15 +281,81 @@ func updateReqTier(c echo.Context) error {
 	}
 	fname := "icon_" + code + ".jpg"
 
-	path, er := savePicture(session.UserId, "tier", tid, fname, tier.ImageUrl, tierData.ImageBase64, "utir-007", tierValidation.imgMaxEdge, tierValidation.imgAspectRate, 80)
+	path, er := savePicture(session.UserId, "tier", tid, fname, "", tierData.ImageBase64, "utir-007", tierValidation.imgMaxEdge, tierValidation.imgAspectRate, 80)
 	if er != nil {
 		return c.JSON(400, er)
 	}
 
-	err = db.UpdateTier(tier, session.UserId, tid, tierData.Name, path, string(parags), tierData.PointType, string(params3))
+	var reviews []db.Review
+	var oldFactors []ReviewFactorData
+	var newFactors []ReviewFactorData
+	var newFactorsBin []byte
+	var oldIndex int
+
+	err = db.Db.Transaction(func(tx *gorm.DB) error {
+		// 旧データを取得
+		tx1 := tx.Select("review_id, review_factors").Where("tier_id = ?", tier.TierId).Find(&reviews)
+
+		if tx1.Error != nil {
+			return tx1.Error
+		}
+
+		for _, review := range reviews {
+			// 旧データをJSON化
+			err = json.Unmarshal([]byte(review.ReviewFactors), &oldFactors)
+			if err != nil {
+				return err
+			}
+			// 新しい評価要素を入れる配列
+			newFactors = make([]ReviewFactorData, newParamsLen)
+			for i := range newFactors {
+				// 受け取ったデータから、旧配列のときにあった場所を読み取る
+				oldIndex = tierData.ReviewFactorParams[i].Index
+				if oldIndex < 0 {
+					// 負数であれば、新規追加されたものとして初期化する
+					newFactors[i] = ReviewFactorData{
+						Info:  "",
+						Point: 0,
+					}
+				} else if oldIndex < len(oldFactors) {
+					// 0以上であれば、旧配列の位置から新配列の位置に移動する
+					newFactors[i] = oldFactors[oldIndex]
+				}
+				newFactorsBin, err = json.Marshal(newFactors)
+				if err != nil {
+					return err
+				}
+				tx1 = tx.Model(&review).Where("review_id = ?", review.ReviewId).Update("review_factors", string(newFactorsBin))
+
+				if tx1.Error != nil {
+					return tx1.Error
+				}
+			}
+		}
+
+		// トランザクション内でTierを更新する
+		err = db.UpdateTierTx(tx, tier, session.UserId, tid, tierData.Name, path, string(parags), tierData.PointType, string(newParamsStr))
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
 	if err != nil {
-		db.WriteErrorLog(session.UserId, requestIp, "utir-008", "Tierの作成に失敗しました", err.Error())
-		return c.JSON(400, MakeError("utir-008", "Tierの作成に失敗しました"))
+		// 新しく保存した方の画像削除
+		er = daletePicture("utir-007", path)
+		if er != nil {
+			db.WriteErrorLog(session.UserId, requestIp, er.Code, er.Message, err.Error())
+		}
+		db.WriteErrorLog(session.UserId, requestIp, "utir-008", "Tierの更新に失敗しました", err.Error())
+		return c.JSON(400, MakeError("utir-003", "Tierに紐づくレビューの評価要素の登録に失敗しました"))
+	}
+
+	// 古いほうの画像削除
+	er = daletePicture("utir-007", tier.ImageUrl)
+	if er != nil {
+		return c.JSON(400, er)
 	}
 
 	db.WriteOperationLog(session.UserId, requestIp, "utir", tid)

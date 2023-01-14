@@ -74,7 +74,8 @@ func CreateTier(
 	return tx.Error
 }
 
-func UpdateTier(
+func UpdateTierTx(
+	tx *gorm.DB,
 	tier Tier,
 	userId string,
 	tierId string,
@@ -85,18 +86,16 @@ func UpdateTier(
 	pointType string,
 	factorParams string,
 ) error {
-	var tx *gorm.DB
 	tier.TierId = tierId
 	tier.Name = name
 	tier.Parags = parags
 	tier.PointType = pointType
 	tier.FactorParams = factorParams
-	// tier.UpdatedAt = time.Now()
 	if imageUrl != "nochange" {
 		tier.ImageUrl = imageUrl
 	}
-	tx = Db.Save(&tier)
-	return tx.Error
+	tx1 := tx.Save(&tier)
+	return tx1.Error
 }
 
 func GetTiers(userId string, word string, sortType string, page int, pageSize int) ([]Tier, error) {
