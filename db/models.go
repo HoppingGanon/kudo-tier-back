@@ -20,6 +20,7 @@ type Session struct {
 	ExpiredTime  time.Time `gorm:"not null"`            //セッションの有効期限
 	TwitterToken string    `gorm:"not null"`            // Twitterから与えられたトークン
 	IsNew        bool      `gorm:"not null"`            // ユーザー未登録状態フラグ
+	LastPostAt   time.Time `gorm:"not null;"`           // 直近の投稿時間
 }
 
 // ユーザーデータ

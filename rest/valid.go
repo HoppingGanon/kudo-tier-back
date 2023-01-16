@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"reviewmakerback/common"
+	"reviewmakerback/db"
 	"unicode/utf8"
 )
 
@@ -53,6 +54,7 @@ type CommonError struct {
 	noSession      ErrorResponse
 	unreadableBody ErrorResponse
 	userNotEqual   ErrorResponse
+	tooFrequently  ErrorResponse
 }
 
 var commonError = CommonError{
@@ -67,6 +69,10 @@ var commonError = CommonError{
 	userNotEqual: ErrorResponse{
 		Code:    "gen0-003-00",
 		Message: "このユーザーの編集権限はありません",
+	},
+	tooFrequently: ErrorResponse{
+		Code:    "gen0-004-00",
+		Message: fmt.Sprintf("投稿は%d秒以上あけて実行してください", db.PostSpanMin),
 	},
 }
 

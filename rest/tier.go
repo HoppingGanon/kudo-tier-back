@@ -146,6 +146,11 @@ func postReqTier(c echo.Context) error {
 		return c.JSON(403, commonError.noSession)
 	}
 
+	// 最小投稿頻度のチェック
+	if db.CheckLastPost(session) {
+		return c.JSON(400, commonError.tooFrequently)
+	}
+
 	requestIp := net.ParseIP(c.RealIP()).String()
 
 	// Bodyの読み取り
@@ -204,6 +209,8 @@ func postReqTier(c echo.Context) error {
 	}
 
 	err = db.CreateTier(session.UserId, tierId, tierData.Name, path, string(parags), tierData.PointType, string(params3))
+	// 投稿時間を記録
+	db.UpdateLastPostAt(session)
 	if err != nil {
 		db.WriteErrorLog(session.UserId, requestIp, "ptir-008", "Tierの作成に失敗しました", err.Error())
 		return c.JSON(400, MakeError("ptir-008", "Tierの作成に失敗しました"))
@@ -325,7 +332,7 @@ func updateReqTier(c echo.Context) error {
 				if err != nil {
 					return err
 				}
-				tx1 = tx.Model(&review).Where("review_id = ?", review.ReviewId).Update("review_factors", string(newFactorsBin))
+				tx1 = tx.Model(&review).Update("review_factors", string(newFactorsBin))
 
 				if tx1.Error != nil {
 					return tx1.Error

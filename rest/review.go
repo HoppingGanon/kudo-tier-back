@@ -112,6 +112,11 @@ func postReqReview(c echo.Context) error {
 		return c.JSON(403, commonError.noSession)
 	}
 
+	// 最小投稿頻度のチェック
+	if db.CheckLastPost(session) {
+		return c.JSON(400, commonError.tooFrequently)
+	}
+
 	requestIp := net.ParseIP(c.RealIP()).String()
 
 	// Bodyの読み取り
@@ -185,6 +190,8 @@ func postReqReview(c echo.Context) error {
 	}
 
 	err = db.CreateReview(session.UserId, reviewData.TierId, reviewId, reviewData.Name, reviewData.Title, path, string(factors), string(sections))
+	// 投稿時間を記録
+	db.UpdateLastPostAt(session)
 	if err != nil {
 		db.WriteErrorLog(session.UserId, requestIp, "prev-010", "レビューの更新に失敗しました", err.Error())
 		return c.JSON(400, MakeError("prev-010", "レビューの更新に失敗しました"))
