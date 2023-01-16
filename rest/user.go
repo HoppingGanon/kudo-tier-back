@@ -89,8 +89,8 @@ func postReqUser(c echo.Context) error {
 		Profile:          userData.Profile,
 		IconUrl:          path,
 		AllowTwitterLink: false,
-		ReviewCount:      0,
-		TierCount:        0,
+		ReviewsCount:     0,
+		TiersCount:       0,
 	})
 }
 
@@ -192,8 +192,8 @@ func getReqUserData(c echo.Context) error {
 		Name:             user.Name,
 		Profile:          user.Profile,
 		AllowTwitterLink: user.AllowTwitterLink,
-		ReviewCount:      db.GetReviewCountInUser(user.UserId),
-		TierCount:        db.GetTierCountInUser(user.UserId),
+		ReviewsCount:     db.GetReviewCountInUser(user.UserId),
+		TiersCount:       db.GetTierCountInUser(user.UserId),
 	}
 
 	if err == nil && uid == session.UserId {

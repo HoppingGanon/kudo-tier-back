@@ -74,8 +74,8 @@ type UserData struct {
 	Profile          string `json:"profile"`          // 自己紹介文
 	AllowTwitterLink bool   `json:"allowTwitterLink"` // Twitterへのリンク許可
 	TwitterName      string `json:"twitterName"`      // TwitterID(自分自身でのログイン時およびTwitter連携を許可した時のみ開示)
-	ReviewCount      int64  `json:"reviewCount"`      // 今までに投稿したレビュー数
-	TierCount        int64  `json:"tierCount"`        // 今までに投稿したTier数
+	ReviewsCount     int64  `json:"reviewsCount"`     // 今までに投稿したレビュー数
+	TiersCount       int64  `json:"tiersCount"`       // 今までに投稿したTier数
 }
 
 type TierData struct {
