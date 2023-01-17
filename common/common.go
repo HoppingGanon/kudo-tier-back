@@ -59,8 +59,8 @@ func MakeSession(seed string) (string, error) {
 	return sessionId, err
 }
 
-func DateToString(v time.Time) string {
-	return v.Format("02-Jan-2006 15:04:05-07")
+func DateToString(t time.Time) string {
+	return t.UTC().Format("2006-01-02T15:04:05Z")
 }
 
 func TestRegexp(reg, str string) bool {
