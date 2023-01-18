@@ -76,12 +76,12 @@ func postReqUser(c echo.Context) error {
 		return c.JSON(400, er)
 	}
 
-	db.UpdateUser(user, userData.Name, userData.Profile, path, false)
+	db.UpdateUser(user, userData.Name, userData.Profile, path, false, 3600)
 
 	requestIp := net.ParseIP(c.RealIP()).String()
 	db.WriteOperationLog(user.UserId, requestIp, "pusr", "")
 
-	return c.JSON(200, UserData{
+	return c.JSON(200, SelfUserData{
 		UserId:           user.UserId,
 		IsSelf:           true,
 		TwitterName:      twitterUser.Data.Id,
@@ -89,6 +89,7 @@ func postReqUser(c echo.Context) error {
 		Profile:          userData.Profile,
 		IconUrl:          path,
 		AllowTwitterLink: false,
+		KeepSession:      3600,
 		ReviewsCount:     0,
 		TiersCount:       0,
 	})
@@ -130,21 +131,25 @@ func updateReqUser(c echo.Context) error {
 	if !f {
 		return c.JSON(400, er)
 	}
+	f, er = validInteger("セッション保持時間", "uusr-003", userData.KeepSession, 10, 1440)
+	if !f {
+		return c.JSON(400, er)
+	}
 
 	var cnt int64
 	user, tx := db.GetUser(uid, "*")
 	if err != nil {
-		return c.JSON(400, MakeError("uusr-003", "ユーザーの更新に失敗しました"))
+		return c.JSON(400, MakeError("uusr-004", "ユーザーの更新に失敗しました"))
 	}
 	tx.Count(&cnt)
 	if cnt != 1 {
-		return c.JSON(400, MakeError("uusr-004", "ユーザーの更新に失敗しました"))
+		return c.JSON(400, MakeError("uusr-005", "ユーザーの更新に失敗しました"))
 	}
 
 	// 画像データの名前を生成
 	code, err := common.MakeRandomChars(16, user.UserId)
 	if err != nil {
-		return c.JSON(400, MakeError("uusr-005", "レビューアイコンの保存に失敗しました しばらく時間を開けて実行してください"))
+		return c.JSON(400, MakeError("uusr-006", "レビューアイコンの保存に失敗しました しばらく時間を開けて実行してください"))
 	}
 	fname := "icon_" + code + ".jpg"
 
@@ -154,7 +159,7 @@ func updateReqUser(c echo.Context) error {
 		return c.JSON(400, er)
 	}
 
-	db.UpdateUser(user, userData.Name, userData.Profile, path, userData.AllowTwitterLink)
+	db.UpdateUser(user, userData.Name, userData.Profile, path, userData.AllowTwitterLink, userData.KeepSession*60)
 
 	requestIp := net.ParseIP(c.RealIP()).String()
 	db.WriteOperationLog(user.UserId, requestIp, "uusr", "")
@@ -167,11 +172,7 @@ func getReqUserData(c echo.Context) error {
 	// 送信元ユーザーと参照先ユーザーが同じかどうかチェック
 	session, err := db.CheckSession(c)
 
-	var existsSession bool
-	if err != nil {
-		// セッションが存在しない
-		existsSession = false
-	}
+	existsSession := err == nil
 
 	user := db.User{}
 	var cnt int64
@@ -184,30 +185,44 @@ func getReqUserData(c echo.Context) error {
 		return c.JSON(404, MakeError("gusr-001", "ユーザーが存在しません"))
 	}
 
-	userData := UserData{
-		UserId:           user.UserId,
-		IsSelf:           existsSession && session.UserId == user.UserId,
-		IconUrl:          user.IconUrl,
-		TwitterName:      "",
-		Name:             user.Name,
-		Profile:          user.Profile,
-		AllowTwitterLink: user.AllowTwitterLink,
-		ReviewsCount:     db.GetReviewCountInUser(user.UserId),
-		TiersCount:       db.GetTierCountInUser(user.UserId),
-	}
-
-	if err == nil && uid == session.UserId {
+	if existsSession && uid == session.UserId {
 		// 送信元ユーザーと参照先ユーザーが同じ場合
-		userData.IsSelf = true
-		userData.TwitterName = user.TwitterName
+
+		selfUserData := SelfUserData{
+			UserId:           user.UserId,
+			IsSelf:           true,
+			IconUrl:          user.IconUrl,
+			TwitterName:      user.TwitterName,
+			Name:             user.Name,
+			Profile:          user.Profile,
+			AllowTwitterLink: user.AllowTwitterLink,
+			KeepSession:      user.KeepSession / 60,
+			ReviewsCount:     db.GetReviewCountInUser(user.UserId),
+			TiersCount:       db.GetTierCountInUser(user.UserId),
+		}
+
+		return c.JSON(200, selfUserData)
 	} else {
+
+		userData := UserData{
+			UserId:           user.UserId,
+			IsSelf:           false,
+			IconUrl:          user.IconUrl,
+			TwitterName:      "",
+			Name:             user.Name,
+			Profile:          user.Profile,
+			AllowTwitterLink: user.AllowTwitterLink,
+			ReviewsCount:     db.GetReviewCountInUser(user.UserId),
+			TiersCount:       db.GetTierCountInUser(user.UserId),
+		}
+
 		// 送信元ユーザーと参照先ユーザーが異なる場合またはそもそもセッションが無い場合
 		userData.IsSelf = false
 		if userData.AllowTwitterLink {
 			userData.TwitterName = user.TwitterName
 		}
+		return c.JSON(200, userData)
 	}
-	return c.JSON(200, userData)
 }
 
 func getReqLatestPostLists(c echo.Context) error {

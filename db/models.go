@@ -31,6 +31,7 @@ type User struct {
 	Name             string    `gorm:"not null;default:no name"`  // 登録名
 	Profile          string    `gorm:"not null"`                  // 自己紹介文
 	AllowTwitterLink bool      `gorm:"not null;default:false"`    // Twitterへのリンク許可
+	KeepSession      int       `gorm:"not null;default:3600"`     // セッション保持時間(秒)
 	CreatedAt        time.Time `gorm:""`                          // 作成日
 	UpdatedAt        time.Time `gorm:""`                          // 更新日
 }

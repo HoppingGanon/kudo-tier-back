@@ -64,6 +64,7 @@ type UserEditingData struct {
 	Profile          string `json:"profile"`          // 自己紹介文
 	IconBase64       string `json:"iconBase64"`       // アイコンデータbase64
 	AllowTwitterLink bool   `json:"allowTwitterLink"` // Twitterへのリンク許可
+	KeepSession      int    `json:"keepSession"`      // セッション保持時間(自分自身でのログイン時のみ開示)
 }
 
 type UserData struct {
@@ -73,6 +74,19 @@ type UserData struct {
 	Name             string `json:"name"`             // 登録名
 	Profile          string `json:"profile"`          // 自己紹介文
 	AllowTwitterLink bool   `json:"allowTwitterLink"` // Twitterへのリンク許可
+	TwitterName      string `json:"twitterName"`      // TwitterID(自分自身でのログイン時およびTwitter連携を許可した時のみ開示)
+	ReviewsCount     int64  `json:"reviewsCount"`     // 今までに投稿したレビュー数
+	TiersCount       int64  `json:"tiersCount"`       // 今までに投稿したTier数
+}
+
+type SelfUserData struct {
+	UserId           string `json:"userId"`           // ユーザーID
+	IsSelf           bool   `json:"isSelf"`           // ログインしている自分自身のデータかどうか
+	IconUrl          string `json:"iconUrl"`          // アイコンURL
+	Name             string `json:"name"`             // 登録名
+	Profile          string `json:"profile"`          // 自己紹介文
+	AllowTwitterLink bool   `json:"allowTwitterLink"` // Twitterへのリンク許可
+	KeepSession      int    `json:"keepSession"`      // セッション保持時間(自分自身でのログイン時のみ開示)
 	TwitterName      string `json:"twitterName"`      // TwitterID(自分自身でのログイン時およびTwitter連携を許可した時のみ開示)
 	ReviewsCount     int64  `json:"reviewsCount"`     // 今までに投稿したレビュー数
 	TiersCount       int64  `json:"tiersCount"`       // 今までに投稿したTier数
