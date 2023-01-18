@@ -80,8 +80,8 @@ func UpdateTierTx(
 	userId string,
 	tierId string,
 	name string,
-	// 画像の保存パス、"nochange"なら変更しない
 	imageUrl string,
+	imageIsChanged bool,
 	parags string,
 	pointType string,
 	factorParams string,
@@ -91,7 +91,7 @@ func UpdateTierTx(
 	tier.Parags = parags
 	tier.PointType = pointType
 	tier.FactorParams = factorParams
-	if imageUrl != "nochange" {
+	if imageIsChanged {
 		tier.ImageUrl = imageUrl
 	}
 	tx1 := tx.Save(&tier)

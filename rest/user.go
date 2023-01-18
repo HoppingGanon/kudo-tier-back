@@ -76,7 +76,7 @@ func postReqUser(c echo.Context) error {
 		return c.JSON(400, er)
 	}
 
-	db.UpdateUser(user, userData.Name, userData.Profile, path, false, 3600)
+	db.UpdateUser(user, userData.Name, userData.Profile, path, true, false, 3600)
 
 	requestIp := net.ParseIP(c.RealIP()).String()
 	db.WriteOperationLog(user.UserId, requestIp, "pusr", "")
@@ -147,19 +147,22 @@ func updateReqUser(c echo.Context) error {
 	}
 
 	// 画像データの名前を生成
-	code, err := common.MakeRandomChars(16, user.UserId)
-	if err != nil {
-		return c.JSON(400, MakeError("uusr-006", "レビューアイコンの保存に失敗しました しばらく時間を開けて実行してください"))
-	}
-	fname := "icon_" + code + ".jpg"
+	path := ""
+	if userData.IconIsChanged {
+		code, err := common.MakeRandomChars(16, user.UserId)
+		if err != nil {
+			return c.JSON(400, MakeError("uusr-006", "レビューアイコンの保存に失敗しました しばらく時間を開けて実行してください"))
+		}
+		fname := "icon_" + code + ".jpg"
 
-	// 画像の保存
-	path, er := savePicture(user.UserId, "user", "user", fname, user.IconUrl, userData.IconBase64, "uusr-006", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
-	if er != nil {
-		return c.JSON(400, er)
+		// 画像の保存
+		path, er = savePicture(user.UserId, "user", "user", fname, user.IconUrl, userData.IconBase64, "uusr-006", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
+		if er != nil {
+			return c.JSON(400, er)
+		}
 	}
 
-	db.UpdateUser(user, userData.Name, userData.Profile, path, userData.AllowTwitterLink, userData.KeepSession*60)
+	db.UpdateUser(user, userData.Name, userData.Profile, path, userData.IconIsChanged, userData.AllowTwitterLink, userData.KeepSession*60)
 
 	requestIp := net.ParseIP(c.RealIP()).String()
 	db.WriteOperationLog(user.UserId, requestIp, "uusr", "")

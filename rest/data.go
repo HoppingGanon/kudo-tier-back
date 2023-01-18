@@ -63,6 +63,7 @@ type UserEditingData struct {
 	Name             string `json:"name"`             // 登録名
 	Profile          string `json:"profile"`          // 自己紹介文
 	IconBase64       string `json:"iconBase64"`       // アイコンデータbase64
+	IconIsChanged    bool   `json:"iconIsChanged"`    // アイコンが変更されているかどうか
 	AllowTwitterLink bool   `json:"allowTwitterLink"` // Twitterへのリンク許可
 	KeepSession      int    `json:"keepSession"`      // セッション保持時間(自分自身でのログイン時のみ開示)
 }
@@ -131,6 +132,7 @@ type ReviewDataWithParams struct {
 type TierEditingData struct {
 	Name               string            `json:"name"`
 	ImageBase64        string            `json:"imageBase64"`
+	ImageIsChanged     bool              `json:"imageIsChanged"`
 	Parags             []ParagData       `json:"parags"`
 	PointType          string            `json:"pointType"`
 	ReviewFactorParams []ReviewParamData `json:"reviewFactorParams"`
@@ -141,6 +143,7 @@ type ReviewEditingData struct {
 	Title         string             `json:"title"`
 	Name          string             `json:"name"`
 	IconBase64    string             `json:"iconBase64"`
+	IconIsChanged bool               `json:"iconIsChanged"`
 	ReviewFactors []ReviewFactorData `json:"reviewFactors"`
 	Sections      []SectionData      `json:"sections"`
 }

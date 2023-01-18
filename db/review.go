@@ -95,29 +95,15 @@ func CreateReview(
 	reviewFactors string,
 	sections string,
 ) error {
-	var tier Review
-	if path == "nochange" {
-		tier = Review{
-			ReviewId:      reviewId,
-			UserId:        userId,
-			TierId:        tierId,
-			Title:         title,
-			Name:          name,
-			IconUrl:       "",
-			ReviewFactors: reviewFactors,
-			Sections:      sections,
-		}
-	} else {
-		tier = Review{
-			ReviewId:      reviewId,
-			UserId:        userId,
-			TierId:        tierId,
-			Title:         title,
-			Name:          name,
-			IconUrl:       path,
-			ReviewFactors: reviewFactors,
-			Sections:      sections,
-		}
+	tier := Review{
+		ReviewId:      reviewId,
+		UserId:        userId,
+		TierId:        tierId,
+		Title:         title,
+		Name:          name,
+		IconUrl:       path,
+		ReviewFactors: reviewFactors,
+		Sections:      sections,
 	}
 	tx := Db.Create(&tier)
 	return tx.Error
@@ -127,8 +113,8 @@ func UpdateReview(
 	review Review,
 	name string,
 	title string,
-	// 画像の保存パス、"nochange"なら変更しない
 	path string,
+	iconIsChanged bool,
 	reviewFactors string,
 	sections string,
 ) error {
@@ -137,7 +123,7 @@ func UpdateReview(
 	review.Title = title
 	review.ReviewFactors = reviewFactors
 	review.Sections = sections
-	if path != "nochange" {
+	if iconIsChanged {
 		review.IconUrl = path
 	}
 	tx = Db.Save(&review)

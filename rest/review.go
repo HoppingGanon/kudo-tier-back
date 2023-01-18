@@ -177,16 +177,20 @@ func postReqReview(c echo.Context) error {
 	}
 
 	// 画像データの名前を生成
-	code, err := common.MakeRandomChars(16, reviewId)
-	if err != nil {
-		return c.JSON(400, MakeError("prev-008", "レビューアイコンの保存に失敗しました しばらく時間を開けて実行してください"))
-	}
-	fname := "icon_" + code + ".jpg"
+	path := ""
+	var er *ErrorResponse
+	if reviewData.IconIsChanged {
+		code, err := common.MakeRandomChars(16, reviewId)
+		if err != nil {
+			return c.JSON(400, MakeError("prev-008", "レビューアイコンの保存に失敗しました しばらく時間を開けて実行してください"))
+		}
+		fname := "icon_" + code + ".jpg"
 
-	// 画像の保存
-	path, er := savePicture(session.UserId, "review", reviewId, fname, "", reviewData.IconBase64, "prev-009", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
-	if er != nil {
-		return c.JSON(400, er)
+		// 画像の保存
+		path, er = savePicture(session.UserId, "review", reviewId, fname, "", reviewData.IconBase64, "prev-009", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
+		if er != nil {
+			return c.JSON(400, er)
+		}
 	}
 
 	err = db.CreateReview(session.UserId, reviewData.TierId, reviewId, reviewData.Name, reviewData.Title, path, string(factors), string(sections))
@@ -270,20 +274,24 @@ func updateReqReview(c echo.Context) error {
 		return c.JSON(400, MakeError("urev-007", ""))
 	}
 
-	// 画像データの名前を生成
-	code, err := common.MakeRandomChars(16, orgReview.ReviewId)
-	if err != nil {
-		return c.JSON(400, MakeError("urev-008", "レビューアイコンの保存に失敗しました しばらく時間を開けて実行してください"))
-	}
-	fname := "icon_" + code + ".jpg"
+	path := ""
+	var er *ErrorResponse
+	if reviewData.IconIsChanged {
+		// 画像データの名前を生成
+		code, err := common.MakeRandomChars(16, orgReview.ReviewId)
+		if err != nil {
+			return c.JSON(400, MakeError("urev-008", "レビューアイコンの保存に失敗しました しばらく時間を開けて実行してください"))
+		}
+		fname := "icon_" + code + ".jpg"
 
-	// 画像の保存
-	path, er := savePicture(session.UserId, "review", orgReview.ReviewId, fname, orgReview.IconUrl, reviewData.IconBase64, "urev-006", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
-	if er != nil {
-		return c.JSON(400, er)
+		// 画像の保存
+		path, er = savePicture(session.UserId, "review", orgReview.ReviewId, fname, orgReview.IconUrl, reviewData.IconBase64, "urev-006", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
+		if er != nil {
+			return c.JSON(400, er)
+		}
 	}
 
-	err = db.UpdateReview(orgReview, reviewData.Name, reviewData.Title, path, string(factors), string(sections))
+	err = db.UpdateReview(orgReview, reviewData.Name, reviewData.Title, path, reviewData.IconIsChanged, string(factors), string(sections))
 	if err != nil {
 		db.WriteErrorLog(session.UserId, requestIp, "urev-007", "Tierの作成に失敗しました", err.Error())
 		return c.JSON(400, MakeError("urev-007", "Tierの作成に失敗しました"))

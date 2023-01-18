@@ -196,16 +196,20 @@ func postReqTier(c echo.Context) error {
 	}
 
 	// 画像データの名前を生成
-	code, err := common.MakeRandomChars(16, tierId)
-	if err != nil {
-		return c.JSON(400, MakeError("ptir-006", "Tierの画像保存に失敗しました しばらく時間を開けて実行してください"))
-	}
-	fname := "icon_" + code + ".jpg"
+	path := ""
+	var er *ErrorResponse
+	if tierData.ImageIsChanged {
+		code, err := common.MakeRandomChars(16, tierId)
+		if err != nil {
+			return c.JSON(400, MakeError("ptir-006", "Tierの画像保存に失敗しました しばらく時間を開けて実行してください"))
+		}
+		fname := "image_" + code + ".jpg"
 
-	// 画像の保存
-	path, er := savePicture(session.UserId, "tier", tierId, fname, "", tierData.ImageBase64, "ptir-007", tierValidation.imgMaxEdge, tierValidation.imgAspectRate, 80)
-	if er != nil {
-		return c.JSON(400, er)
+		// 画像の保存
+		path, er = savePicture(session.UserId, "tier", tierId, fname, "", tierData.ImageBase64, "ptir-007", tierValidation.imgMaxEdge, tierValidation.imgAspectRate, 80)
+		if er != nil {
+			return c.JSON(400, er)
+		}
 	}
 
 	err = db.CreateTier(session.UserId, tierId, tierData.Name, path, string(parags), tierData.PointType, string(params3))
@@ -282,15 +286,19 @@ func updateReqTier(c echo.Context) error {
 	}
 
 	// 画像データの名前を生成
-	code, err := common.MakeRandomChars(16, tid)
-	if err != nil {
-		return c.JSON(400, MakeError("utir-006", "TierIDが生成出来ませんでした しばらく時間を開けて実行してください"))
-	}
-	fname := "icon_" + code + ".jpg"
+	path := ""
+	var er *ErrorResponse
+	if tierData.ImageIsChanged {
+		code, err := common.MakeRandomChars(16, tid)
+		if err != nil {
+			return c.JSON(400, MakeError("utir-006", "TierIDが生成出来ませんでした しばらく時間を開けて実行してください"))
+		}
+		fname := "icon_" + code + ".jpg"
 
-	path, er := savePicture(session.UserId, "tier", tid, fname, "", tierData.ImageBase64, "utir-007", tierValidation.imgMaxEdge, tierValidation.imgAspectRate, 80)
-	if er != nil {
-		return c.JSON(400, er)
+		path, er = savePicture(session.UserId, "tier", tid, fname, "", tierData.ImageBase64, "utir-007", tierValidation.imgMaxEdge, tierValidation.imgAspectRate, 80)
+		if er != nil {
+			return c.JSON(400, er)
+		}
 	}
 
 	var reviews []db.Review
@@ -341,7 +349,7 @@ func updateReqTier(c echo.Context) error {
 		}
 
 		// トランザクション内でTierを更新する
-		err = db.UpdateTierTx(tx, tier, session.UserId, tid, tierData.Name, path, string(parags), tierData.PointType, string(newParamsStr))
+		err = db.UpdateTierTx(tx, tier, session.UserId, tid, tierData.Name, path, tierData.ImageIsChanged, string(parags), tierData.PointType, string(newParamsStr))
 		if err != nil {
 			return err
 		}

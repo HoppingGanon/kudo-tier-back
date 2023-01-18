@@ -67,10 +67,7 @@ func daletePicture(errorCode string, delpath string) *ErrorResponse {
 func savePicture(userId string, data string, id string, fname string, delpath string, imageBase64 string, errorCode string, imgMaxEdge int, aspectRate float32, quality int) (string, *ErrorResponse) {
 	path := ""
 	// Base64文字列をバイト列に変換する
-	if imageBase64 == "nochange" {
-		// 更新しない
-		return "nochange", nil
-	} else if imageBase64 == "" {
+	if imageBase64 == "" {
 		// ファイル削除
 		er := daletePicture(errorCode, delpath)
 		if er != nil {
