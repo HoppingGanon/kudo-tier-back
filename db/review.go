@@ -135,9 +135,11 @@ func DeleteReview(reviewId string) error {
 	return tx.Error
 }
 
-func DeleteReviews(tierId string) error {
-	tx := Db.Select("tier_id").Where("tier_id = ?", tierId).Delete(&Review{})
-	return tx.Error
+func DeleteReviews(tierId string) ([]Review, error) {
+	var reviews []Review
+	tx := Db.Select("review_id, tier_id").Where("tier_id = ?", tierId).Select(&reviews)
+	tx = tx.Delete(&Review{})
+	return reviews, tx.Error
 }
 
 func GetReviewCountInUser(userId string) int64 {

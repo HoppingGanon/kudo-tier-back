@@ -8,7 +8,6 @@ import (
 
 	"github.com/labstack/echo"
 
-	common "reviewmakerback/common"
 	db "reviewmakerback/db"
 )
 
@@ -63,15 +62,8 @@ func postReqUser(c echo.Context) error {
 		return c.JSON(400, MakeError("pusr-006", "ユーザーの作成に失敗しました"))
 	}
 
-	// 画像データの名前を生成
-	code, err := common.MakeRandomChars(16, user.UserId)
-	if err != nil {
-		return c.JSON(400, MakeError("pusr-007", "レビューアイコンの保存に失敗しました しばらく時間を開けて実行してください"))
-	}
-	fname := "icon_" + code + ".jpg"
-
 	// 画像の保存
-	path, er := savePicture(user.UserId, "user", "user", fname, "", userData.IconBase64, "prev-009", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
+	path, er := savePicture(user.UserId, "user", "user", "icon_", "", userData.IconBase64, "prev-009", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
 	if er != nil {
 		return c.JSON(400, er)
 	}
@@ -149,14 +141,8 @@ func updateReqUser(c echo.Context) error {
 	// 画像データの名前を生成
 	path := ""
 	if userData.IconIsChanged {
-		code, err := common.MakeRandomChars(16, user.UserId)
-		if err != nil {
-			return c.JSON(400, MakeError("uusr-006", "レビューアイコンの保存に失敗しました しばらく時間を開けて実行してください"))
-		}
-		fname := "icon_" + code + ".jpg"
-
 		// 画像の保存
-		path, er = savePicture(user.UserId, "user", "user", fname, user.IconUrl, userData.IconBase64, "uusr-006", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
+		path, er = savePicture(user.UserId, "user", "user", "icon_", user.IconUrl, userData.IconBase64, "uusr-006", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
 		if er != nil {
 			return c.JSON(400, er)
 		}

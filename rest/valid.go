@@ -35,13 +35,22 @@ type SectionValidation struct {
 	paragsLenMax int
 	// リンクの文字数の長さの上限
 	paragLinkLenMax int
+	// リンクの文字数の長さの上限
+	paragImgMaxBytes int
+	// 画像のアスペクト比
+	paragImgAspect float32
+	// tierの画像サイズの一辺最大
+	paragImgMax int
 }
 
 var sectionValidation = SectionValidation{
-	sectionTitleLen: 100,
-	paragTextLenMax: 400,
-	paragsLenMax:    16,
-	paragLinkLenMax: 100,
+	sectionTitleLen:  100,
+	paragTextLenMax:  400,
+	paragsLenMax:     16,
+	paragLinkLenMax:  100,
+	paragImgMaxBytes: 5000,
+	paragImgAspect:   2 / 1,
+	paragImgMax:      1080,
 }
 
 // リンクの文字数の長さの上限
@@ -134,7 +143,7 @@ func IsPointType(v string) bool {
 	})
 }
 
-func validParagraphs(parags []ParagData) (bool, *ErrorResponse) {
+func validParagraphs(parags []ParagEditingData) (bool, *ErrorResponse) {
 	if len(parags) > sectionValidation.paragsLenMax {
 		return false, MakeError("vpgs-002", fmt.Sprintf("説明文/リンクは合計%d個以下にする必要があります", sectionValidation.paragsLenMax))
 	}
@@ -154,7 +163,12 @@ func validParagraphs(parags []ParagData) (bool, *ErrorResponse) {
 					return false, e
 				}
 			} else if parag.Type == "imageLink" {
-
+				// 画像が既定のサイズ以下であることを確認する
+				if parag.IsChanged {
+					if len(parag.Body) > int(sectionValidation.paragImgMaxBytes*1024*8/6) {
+						return false, MakeError("vpgs-005", "画像のサイズが大きすぎます")
+					}
+				}
 			}
 		}
 	}

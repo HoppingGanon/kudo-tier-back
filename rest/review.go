@@ -171,32 +171,41 @@ func postReqReview(c echo.Context) error {
 		return c.JSON(400, MakeError("prev-006", ""))
 	}
 
-	sections, err := json.Marshal(reviewData.Sections)
-	if err != nil {
-		return c.JSON(400, MakeError("prev-007", ""))
-	}
-
-	// 画像データの名前を生成
+	// 画像データを保存
 	path := ""
 	var er *ErrorResponse
 	if reviewData.IconIsChanged {
-		code, err := common.MakeRandomChars(16, reviewId)
-		if err != nil {
-			return c.JSON(400, MakeError("prev-008", "レビューアイコンの保存に失敗しました しばらく時間を開けて実行してください"))
-		}
-		fname := "icon_" + code + ".jpg"
-
 		// 画像の保存
-		path, er = savePicture(session.UserId, "review", reviewId, fname, "", reviewData.IconBase64, "prev-009", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
+		path, er = savePicture(session.UserId, "review", reviewId, "icon_", "", reviewData.IconBase64, "prev-009", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
 		if er != nil {
 			return c.JSON(400, er)
 		}
 	}
 
+	// セクションを加工、Parag内の画像を保存
+	madeSections, imageMap, er := createSections(reviewData.Sections, sections2ImageList([]SectionData{}), session.UserId, "review", reviewId, "image_")
+	if er != nil {
+		deleteSectionImg(madeSections)
+		return c.JSON(400, er)
+	}
+
+	// セクションをJSONテキスト化
+	sections, err := json.Marshal(madeSections)
+	if err != nil {
+		// 新しく作成した途中の画像ファイルを削除
+		deleteSectionImg(madeSections)
+		return c.JSON(400, MakeError("prev-007", ""))
+	}
+
+	// 使用しなくなったファイルを強制削除(POSTならば存在しない)
+	deleteImageMap(imageMap)
+
 	err = db.CreateReview(session.UserId, reviewData.TierId, reviewId, reviewData.Name, reviewData.Title, path, string(factors), string(sections))
 	// 投稿時間を記録
 	db.UpdateLastPostAt(session)
 	if err != nil {
+		// 新しく作成した途中の画像ファイルを削除
+		deleteSectionImg(madeSections)
 		db.WriteErrorLog(session.UserId, requestIp, "prev-010", "レビューの更新に失敗しました", err.Error())
 		return c.JSON(400, MakeError("prev-010", "レビューの更新に失敗しました"))
 	}
@@ -266,35 +275,56 @@ func updateReqReview(c echo.Context) error {
 
 	factors, err := json.Marshal(reviewData.ReviewFactors)
 	if err != nil {
-		return c.JSON(400, MakeError("urev-006", ""))
-	}
-
-	sections, err := json.Marshal(reviewData.Sections)
-	if err != nil {
-		return c.JSON(400, MakeError("urev-007", ""))
+		return c.JSON(400, MakeError("urev-006", "評価項目の登録に失敗しました"))
 	}
 
 	path := ""
 	var er *ErrorResponse
 	if reviewData.IconIsChanged {
-		// 画像データの名前を生成
-		code, err := common.MakeRandomChars(16, orgReview.ReviewId)
-		if err != nil {
-			return c.JSON(400, MakeError("urev-008", "レビューアイコンの保存に失敗しました しばらく時間を開けて実行してください"))
-		}
-		fname := "icon_" + code + ".jpg"
-
 		// 画像の保存
-		path, er = savePicture(session.UserId, "review", orgReview.ReviewId, fname, orgReview.IconUrl, reviewData.IconBase64, "urev-006", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
+		path, er = savePicture(session.UserId, "review", orgReview.ReviewId, "icon_", orgReview.IconUrl, reviewData.IconBase64, "urev-006", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
 		if er != nil {
 			return c.JSON(400, er)
 		}
+	} else {
+		path = orgReview.IconUrl
 	}
+
+	var orgSections []SectionData
+	err = json.Unmarshal([]byte(orgReview.Sections), &orgSections)
+	if err != nil {
+		return c.JSON(400, MakeError("urev-007", "説明文等"))
+	}
+
+	// セクションを加工、Parag内の画像を保存
+	madeSections, imageMap, er := createSections(reviewData.Sections, sections2ImageList(orgSections), session.UserId, "review", orgReview.ReviewId, "image_")
+	if er != nil {
+		deleteSectionImg(madeSections)
+		return c.JSON(400, er)
+	}
+
+	// セクションをJSONテキスト化
+	sections, err := json.Marshal(madeSections)
+	if err != nil {
+		// 新しく作成した途中の画像ファイルを削除
+		deleteSectionImg(madeSections)
+		return c.JSON(400, MakeError("prev-007", ""))
+	}
+
+	// 使用しなくなったファイルを強制削除(POSTならば存在しない)
+	deleteImageMap(imageMap)
 
 	err = db.UpdateReview(orgReview, reviewData.Name, reviewData.Title, path, reviewData.IconIsChanged, string(factors), string(sections))
 	if err != nil {
+		// 新しく作成した途中の画像ファイルを削除
+		deleteSectionImg(madeSections)
 		db.WriteErrorLog(session.UserId, requestIp, "urev-007", "Tierの作成に失敗しました", err.Error())
 		return c.JSON(400, MakeError("urev-007", "Tierの作成に失敗しました"))
+	}
+
+	// 古いほうの画像削除
+	if reviewData.IconIsChanged {
+		daleteFile("", orgReview.IconUrl)
 	}
 
 	db.WriteOperationLog(session.UserId, requestIp, "urev", orgReview.ReviewId)
@@ -478,6 +508,7 @@ func deleteReviewReq(c echo.Context) error {
 	}
 
 	err = db.DeleteReview(rid)
+	deleteFolder(review.UserId, "review", rid, "drev-003", requestIp)
 
 	if err != nil {
 		db.WriteErrorLog(session.UserId, requestIp, "drev-002", "レビューの削除に失敗しました", err.Error())

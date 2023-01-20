@@ -130,22 +130,22 @@ type ReviewDataWithParams struct {
 }
 
 type TierEditingData struct {
-	Name               string            `json:"name"`
-	ImageBase64        string            `json:"imageBase64"`
-	ImageIsChanged     bool              `json:"imageIsChanged"`
-	Parags             []ParagData       `json:"parags"`
-	PointType          string            `json:"pointType"`
-	ReviewFactorParams []ReviewParamData `json:"reviewFactorParams"`
+	Name               string             `json:"name"`
+	ImageBase64        string             `json:"imageBase64"`
+	ImageIsChanged     bool               `json:"imageIsChanged"`
+	Parags             []ParagEditingData `json:"parags"`
+	PointType          string             `json:"pointType"`
+	ReviewFactorParams []ReviewParamData  `json:"reviewFactorParams"`
 }
 
 type ReviewEditingData struct {
-	TierId        string             `json:"tierId"`
-	Title         string             `json:"title"`
-	Name          string             `json:"name"`
-	IconBase64    string             `json:"iconBase64"`
-	IconIsChanged bool               `json:"iconIsChanged"`
-	ReviewFactors []ReviewFactorData `json:"reviewFactors"`
-	Sections      []SectionData      `json:"sections"`
+	TierId        string               `json:"tierId"`
+	Title         string               `json:"title"`
+	Name          string               `json:"name"`
+	IconBase64    string               `json:"iconBase64"`
+	IconIsChanged bool                 `json:"iconIsChanged"`
+	ReviewFactors []ReviewFactorData   `json:"reviewFactors"`
+	Sections      []SectionEditingData `json:"sections"`
 }
 
 type ReviewFactorData struct {
@@ -169,6 +169,17 @@ type ReviewParam struct {
 type SectionData struct {
 	Title  string      `json:"title"`
 	Parags []ParagData `json:"parags"`
+}
+
+type SectionEditingData struct {
+	Title  string             `json:"title"`
+	Parags []ParagEditingData `json:"parags"`
+}
+
+type ParagEditingData struct {
+	Type      string `json:"type"`
+	Body      string `json:"body"`
+	IsChanged bool   `json:"isChanged"`
 }
 
 type ParagData struct {

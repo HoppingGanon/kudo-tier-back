@@ -3,15 +3,19 @@ package rest
 import (
 	"bytes"
 	b64 "encoding/base64"
+	"fmt"
 	"image"
 	"image/jpeg"
 	"net/http"
 	"os"
 	common "reviewmakerback/common"
+	"reviewmakerback/db"
 
 	"github.com/labstack/echo"
 	"github.com/nfnt/resize"
 )
+
+const saveRetryCount = 3
 
 // テスト用の関数
 func getReqHello(c echo.Context) error {
@@ -47,7 +51,7 @@ func getUserFile(c echo.Context) error {
 	return c.File(path)
 }
 
-func daletePicture(errorCode string, delpath string) *ErrorResponse {
+func daleteFile(errorCode string, delpath string) *ErrorResponse {
 	// ファイル削除
 	if delpath != "" {
 		_, err := os.Stat(delpath)
@@ -55,11 +59,19 @@ func daletePicture(errorCode string, delpath string) *ErrorResponse {
 			// ファイルが存在した場合
 			err = os.Remove(delpath)
 			if err != nil {
+				// エラーコードはsavePicと重複
 				return MakeError(errorCode+"-10", "画像の削除に失敗しました")
 			}
 		}
 	}
 	return nil
+}
+
+func deleteFolder(userId string, data string, id string, errorCode string, ipAddress string) {
+	err := os.RemoveAll((fmt.Sprintf("%s/%s/%s/%s", os.Getenv("AP_FILE_PATH"), userId, data, id)))
+	if os.IsNotExist(err) {
+		db.WriteErrorLog(userId, ipAddress, errorCode, "フォルダが削除できませんでした", fmt.Sprintf("'%s/%s/%s/%s' ", os.Getenv("AP_FILE_PATH"), userId, data, id)+err.Error())
+	}
 }
 
 // 画像を上書き保存する
@@ -69,7 +81,7 @@ func savePicture(userId string, data string, id string, fname string, delpath st
 	// Base64文字列をバイト列に変換する
 	if imageBase64 == "" {
 		// ファイル削除
-		er := daletePicture(errorCode, delpath)
+		er := daleteFile(errorCode, delpath)
 		if er != nil {
 			return path, er
 		}
@@ -95,17 +107,34 @@ func savePicture(userId string, data string, id string, fname string, delpath st
 		}
 
 		resizedImg := resize.Thumbnail(uint(imgMaxEdge), uint(imgMaxEdge), img, resize.NearestNeighbor)
-		err = os.MkdirAll(os.Getenv("AP_FILE_PATH")+"/"+userId+"/"+data+"/"+id, os.ModePerm)
+		err = os.MkdirAll(fmt.Sprintf("%s/%s/%s/%s", os.Getenv("AP_FILE_PATH"), userId, data, id), os.ModePerm)
 		if err != nil {
 			return path, MakeError(errorCode+"-04", "画像の登録に失敗しました")
 		}
 
-		path = os.Getenv("AP_FILE_PATH") + "/" + userId + "/" + data + "/" + id + "/" + fname
+	lo:
+		for i := 0; i < saveRetryCount; i++ {
+			code, err := common.MakeRandomChars(16, fmt.Sprintf("%s%s_%d", userId, id, i))
+			if err != nil {
+				return "", MakeError(errorCode+"-05", "画像の登録に失敗しました しばらく時間を空けてもう一度実行してください")
+			}
+			path = fmt.Sprintf("%s/%s/%s/%s/%s%s.jpg", os.Getenv("AP_FILE_PATH"), userId, data, id, fname, code)
+
+			_, err = os.Stat(path)
+			if os.IsNotExist(err) {
+				break lo
+			} else if i == saveRetryCount-1 {
+				// リトライ上限に到達
+				return "", MakeError(errorCode+"-06", "画像の登録に失敗しました しばらく時間を空けてもう一度実行してください")
+			}
+		}
 
 		out, err := os.Create(path)
 		if err != nil {
-			out.Close()
-			return path, MakeError(errorCode+"-05", "画像の登録に失敗しました")
+			if out != nil {
+				out.Close()
+			}
+			return "", MakeError(errorCode+"-07", "画像の登録に失敗しました")
 		}
 
 		opts := &jpeg.Options{
@@ -113,8 +142,9 @@ func savePicture(userId string, data string, id string, fname string, delpath st
 		}
 
 		// ファイル削除
-		er := daletePicture(errorCode, delpath)
+		er := daleteFile(errorCode, delpath)
 		if er != nil {
+			out.Close()
 			return path, er
 		}
 
@@ -122,8 +152,118 @@ func savePicture(userId string, data string, id string, fname string, delpath st
 		out.Close()
 
 		if err != nil {
-			return path, MakeError(errorCode+"-06", "画像の登録に失敗しました")
+			return path, MakeError(errorCode+"-08", "画像の登録に失敗しました")
 		}
 	}
 	return path, nil
+}
+
+// セクション配列から画像のパスをマップ化したものを取得
+func sections2ImageList(sections []SectionData) map[string]bool {
+	m := make(map[string]bool)
+	for _, section := range sections {
+		for _, parag := range section.Parags {
+			if parag.Type == "imageLink" && parag.Body != "" {
+				m[parag.Body] = false
+			}
+		}
+	}
+	return m
+}
+
+// parag配列から画像のパスをマップ化したものを取得
+func parags2DelImageMap(oldParags []ParagData) map[string]bool {
+	m := make(map[string]bool)
+	for _, parag := range oldParags {
+		if parag.Type == "imageLink" && parag.Body != "" {
+			m[parag.Body] = false
+		}
+	}
+	return m
+}
+
+// 編集データをセクション配列に変換
+// oldImageMapはもともと存在していたparagsのなかに存在するファイルのパスのマップで、対応する値は全てfalseにしておく
+// 返すmapは、もともと存在していたparagsのなかに存在するかつ削除せずに残しておくファイル
+func createParags(parags []ParagEditingData, oldImageMap map[string]bool, userId string, data string, id string, fname string) ([]ParagData, map[string]bool, *ErrorResponse) {
+	madeParags := make([]ParagData, len(parags))
+	var exists bool
+	for i, parag := range parags {
+		if parag.Type == "imageLink" {
+			// 画像ファイルの場合
+			if !parag.IsChanged {
+				// クライアント側で変更がない
+				_, exists = oldImageMap[parag.Body]
+				if exists {
+					// クライアント側から送られてきたリンクが、もともと存在していたparagsのなかにも存在する
+					// 残すためのフラグを立てておく
+					oldImageMap[parag.Body] = true
+					madeParags[i].Type = "imageLink"
+					madeParags[i].Body = parag.Body
+				} else {
+					// 存在しない場合は異常なケース
+					return madeParags, oldImageMap, MakeError("cpgs-02", "説明画像に存在しないファイルが指定されました")
+				}
+			} else {
+				// クライアント側で変更あり
+				path, er := savePicture(userId, data, id, fname, "", parag.Body, "cpgs-01", sectionValidation.paragImgMax, sectionValidation.paragImgAspect, 80)
+				if er != nil {
+					return madeParags, oldImageMap, er
+				}
+				madeParags[i].Type = "imageLink"
+				madeParags[i].Body = path
+			}
+		} else {
+			// 画像ファイル以外
+			madeParags[i].Type = parag.Type
+			madeParags[i].Body = parag.Body
+		}
+	}
+
+	return madeParags, oldImageMap, nil
+}
+
+// 編集データをセクション配列に変換
+// oldImageMapはもともと存在していたparagsのなかに存在するファイルのパスのマップで、対応する値は全てfalseにしておく
+// 返すmapは、もともと存在していたparagsのなかに存在するかつ削除せずに残しておくファイル
+func createSections(sections []SectionEditingData, oldImageMap map[string]bool, userId string, data string, id string, fname string) ([]SectionData, map[string]bool, *ErrorResponse) {
+	madeSections := make([]SectionData, len(sections))
+	var parags []ParagData
+	var er *ErrorResponse = nil
+	for i, section := range sections {
+		parags, oldImageMap, er = createParags(section.Parags, oldImageMap, userId, data, id, fname)
+		if er != nil {
+			return madeSections, oldImageMap, er
+		}
+		madeSections[i] = SectionData{
+			Title:  section.Title,
+			Parags: parags,
+		}
+	}
+	return madeSections, oldImageMap, nil
+}
+
+func deleteParagsImg(parags []ParagData) {
+	for _, parag := range parags {
+		daleteFile("", parag.Body)
+	}
+}
+
+func deleteSectionImg(sections []SectionData) {
+	for _, section := range sections {
+		deleteParagsImg(section.Parags)
+	}
+}
+
+func deleteImageMap(oldImageMap map[string]bool) {
+	for path, f := range oldImageMap {
+		s := "false"
+		if f {
+			s = "true"
+		}
+		println("del: " + path + " = " + s)
+		if !f {
+			daleteFile("", path)
+		}
+	}
 }
