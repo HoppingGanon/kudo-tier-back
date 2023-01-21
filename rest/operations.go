@@ -257,11 +257,6 @@ func deleteSectionImg(sections []SectionData) {
 
 func deleteImageMap(oldImageMap map[string]bool) {
 	for path, f := range oldImageMap {
-		s := "false"
-		if f {
-			s = "true"
-		}
-		println("del: " + path + " = " + s)
 		if !f {
 			daleteFile("", path)
 		}
