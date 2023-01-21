@@ -531,25 +531,29 @@ func deleteReqTier(c echo.Context) error {
 		return c.JSON(400, MakeError("dtir-001", "対象のTierがありません"))
 	}
 
-	err = db.DeleteTier(tid)
+	var reviews []db.Review
+	err = db.Db.Transaction(func(tx *gorm.DB) error {
+		tx2 := tx.Select("tier_id").Where("tier_id = ?", tier.TierId).Delete(&db.Tier{})
+		if tx2.Error != nil {
+			return tx2.Error
+		}
+		tx2 = tx.Select("review_id, tier_id").Where("tier_id = ?", tier.TierId).Find(&reviews)
+		if tx2.Error != nil {
+			return tx2.Error
+		}
+		tx2 = tx.Select("tier_id").Where("tier_id = ?", tier.TierId).Delete(&db.Review{})
+		return tx2.Error
+	})
 
 	if err != nil {
 		db.WriteErrorLog(session.UserId, requestIp, "dtir-002", "Tierの削除に失敗しました", err.Error())
 		return c.JSON(400, MakeError("dtir-002", "Tierの削除に失敗しました"))
 	}
 
-	deleteFolder(tier.UserId, "tier", requestIp, "dtir-004", requestIp)
-
-	var reviews []db.Review
-	reviews, err = db.DeleteReviews(tid)
 	for _, review := range reviews {
 		deleteFolder(tier.UserId, "review", review.ReviewId, "dtir-005", requestIp)
 	}
-
-	if err != nil {
-		db.WriteErrorLog(session.UserId, requestIp, "dtir-003", "Tierに紐づくレビューの削除に失敗しました", err.Error())
-		return c.JSON(400, MakeError("dtir-003", "Tierに紐づくレビューの削除に失敗しました"))
-	}
+	deleteFolder(tier.UserId, "tier", tier.TierId, "dtir-004", requestIp)
 
 	db.WriteOperationLog(session.UserId, requestIp, "dtir", tid)
 	return c.NoContent(200)

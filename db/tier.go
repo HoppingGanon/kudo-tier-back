@@ -130,11 +130,6 @@ func GetTiers(userId string, word string, sortType string, page int, pageSize in
 	return tiers, nil
 }
 
-func DeleteTier(tierId string) error {
-	tx := Db.Select("tier_id").Where("tier_id = ?", tierId).Delete(&Tier{})
-	return tx.Error
-}
-
 func GetTierCountInUser(userId string) int64 {
 	var cnt int64
 	Db.Select("tier_id").Where("user_id = ?", userId).Find(&Tier{}).Count(&cnt)

@@ -62,6 +62,11 @@ func postReqUser(c echo.Context) error {
 		return c.JSON(400, MakeError("pusr-006", "ユーザーの作成に失敗しました"))
 	}
 
+	session.UserId = user.UserId
+	if db.Db.Save(&session).Error != nil {
+		// エラー処理なし
+	}
+
 	// 画像の保存
 	path, er := savePicture(user.UserId, "user", "user", "icon_", "", userData.IconBase64, "prev-009", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
 	if er != nil {
