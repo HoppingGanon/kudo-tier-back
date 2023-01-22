@@ -54,7 +54,7 @@ var sectionValidation = SectionValidation{
 }
 
 // リンクの文字数の長さの上限
-const paragLinkLenMax = 100
+const paragLinkLenMax = 255
 
 // アスペクト比の振れ幅
 const aspectRateAmp = 0.1
@@ -157,8 +157,8 @@ func validParagraphs(parags []ParagEditingData) (bool, *ErrorResponse) {
 				if !f {
 					return false, e
 				}
-			} else if parag.Type == "twitterLink" {
-				f, e := validText("Twitterリンク", "vpgs-004", parag.Body, false, -1, paragLinkLenMax, "", "")
+			} else if parag.Type == "serviceLink" {
+				f, e := validText("リンク", "vpgs-004", parag.Body, false, -1, paragLinkLenMax, `^((http)|(https))://.*`, "正しい形式")
 				if !f {
 					return false, e
 				}
@@ -178,7 +178,7 @@ func validParagraphs(parags []ParagEditingData) (bool, *ErrorResponse) {
 func IsParagraphType(v string) bool {
 	return common.Contains(v, []string{
 		"text",
-		"twitterLink",
+		"serviceLink",
 		"imageLink",
 	})
 }
