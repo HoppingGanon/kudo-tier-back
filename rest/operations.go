@@ -206,7 +206,7 @@ func createParags(parags []ParagEditingData, oldImageMap map[string]bool, userId
 				}
 			} else {
 				// クライアント側で変更あり
-				path, er := savePicture(userId, data, id, fname, "", parag.Body, "cpgs-01", sectionValidation.paragImgMax, sectionValidation.paragImgAspect, 80)
+				path, er := savePicture(userId, data, id, fname, "", parag.Body, "cpgs-01", sectionValidation.paragImgMax, sectionValidation.paragImgAspect, sectionValidation.paragImageQuality)
 				if er != nil {
 					return madeParags, oldImageMap, er
 				}

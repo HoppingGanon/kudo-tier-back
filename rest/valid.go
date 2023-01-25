@@ -41,16 +41,19 @@ type SectionValidation struct {
 	paragImgAspect float32
 	// tierの画像サイズの一辺最大
 	paragImgMax int
+	// tierの画像品質
+	paragImageQuality int
 }
 
 var sectionValidation = SectionValidation{
-	sectionTitleLen:  100,
-	paragTextLenMax:  400,
-	paragsLenMax:     16,
-	paragLinkLenMax:  100,
-	paragImgMaxBytes: 5000,
-	paragImgAspect:   2 / 1,
-	paragImgMax:      1080,
+	sectionTitleLen:   100,
+	paragTextLenMax:   400,
+	paragsLenMax:      16,
+	paragLinkLenMax:   100,
+	paragImgMaxBytes:  5000,
+	paragImgAspect:    2 / 1,
+	paragImgMax:       1080,
+	paragImageQuality: 60,
 }
 
 // リンクの文字数の長さの上限
