@@ -51,7 +51,7 @@ var sectionValidation = SectionValidation{
 	paragsLenMax:      16,
 	paragLinkLenMax:   100,
 	paragImgMaxBytes:  5000,
-	paragImgAspect:    2 / 1,
+	paragImgAspect:    -1,
 	paragImgMax:       1080,
 	paragImageQuality: 60,
 }

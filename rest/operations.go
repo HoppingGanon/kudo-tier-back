@@ -76,6 +76,7 @@ func deleteFolder(userId string, data string, id string, errorCode string, ipAdd
 
 // 画像を上書き保存する
 // delpath 省略可能
+// aspectRate 負数を指定するとアスペクト比を設定しない
 func savePicture(userId string, data string, id string, fname string, delpath string, imageBase64 string, errorCode string, imgMaxEdge int, aspectRate float32, quality int) (string, *ErrorResponse) {
 	path := ""
 	// Base64文字列をバイト列に変換する
@@ -102,8 +103,10 @@ func savePicture(userId string, data string, id string, fname string, delpath st
 		y := img.Bounds().Dy()
 
 		// (画像のアスペクト比 / 既定のアスペクト比) がプラスマイナスaspectRateAmpになってるか確認
-		if ((float32(x)/float32(y))/aspectRate)-(1.0-aspectRateAmp) > aspectRateAmp*2 {
-			return path, MakeError(errorCode+"-03", "画像のアスペクト比が異常です")
+		if aspectRate < 0 {
+			if ((float32(x)/float32(y))/aspectRate)-(1.0-aspectRateAmp) > aspectRateAmp*2 {
+				return path, MakeError(errorCode+"-03", "画像のアスペクト比が異常です")
+			}
 		}
 
 		resizedImg := resize.Thumbnail(uint(imgMaxEdge), uint(imgMaxEdge), img, resize.NearestNeighbor)
