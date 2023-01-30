@@ -66,6 +66,8 @@ type Tier struct {
 	Parags       string    `gorm:"not null"`            // 説明文
 	PointType    string    `gorm:"not null"`            // デフォルトのポイント表示形式
 	FactorParams string    `gorm:"not null"`            // 評価のパラメータ
+	PullingUp    int       `gorm:"not null"`            // Tier表を上に引き上げる
+	PullingDown  int       `gorm:"not null"`            // Tier表を下に引き下げる
 	CreatedAt    time.Time `gorm:""`                    // 作成日
 	UpdatedAt    time.Time `gorm:""`                    // 更新日
 }

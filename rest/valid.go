@@ -47,17 +47,14 @@ type SectionValidation struct {
 
 var sectionValidation = SectionValidation{
 	sectionTitleLen:   100,
-	paragTextLenMax:   400,
+	paragTextLenMax:   2000,
 	paragsLenMax:      16,
-	paragLinkLenMax:   100,
+	paragLinkLenMax:   400,
 	paragImgMaxBytes:  5000,
 	paragImgAspect:    -1,
 	paragImgMax:       1080,
 	paragImageQuality: 60,
 }
-
-// リンクの文字数の長さの上限
-const paragLinkLenMax = 255
 
 // アスペクト比の振れ幅
 const aspectRateAmp = 0.1
@@ -161,7 +158,7 @@ func validParagraphs(parags []ParagEditingData) (bool, *ErrorResponse) {
 					return false, e
 				}
 			} else if parag.Type == "serviceLink" {
-				f, e := validText("リンク", "vpgs-004", parag.Body, false, -1, paragLinkLenMax, `^((http)|(https))://.*`, "正しい形式")
+				f, e := validText("リンク", "vpgs-004", parag.Body, false, -1, sectionValidation.paragLinkLenMax, `^((http)|(https))://.*`, "正しい形式")
 				if !f {
 					return false, e
 				}

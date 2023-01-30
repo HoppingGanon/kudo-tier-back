@@ -48,9 +48,9 @@ var tierValidation = TierValidation{
 func validTier(tierData TierEditingData) (bool, *ErrorResponse) {
 	// バリデーションチェック
 	// Name
-	f, e := validText("Tier名", "vtir-001", tierData.Name, true, -1, tierValidation.nameLenMax, "", "")
+	f, er := validText("Tier名", "vtir-001", tierData.Name, true, -1, tierValidation.nameLenMax, "", "")
 	if !f {
-		return f, e
+		return f, er
 	}
 
 	// Paragsのチェック
@@ -60,7 +60,7 @@ func validTier(tierData TierEditingData) (bool, *ErrorResponse) {
 		return false, MakeError("vtir-003", fmt.Sprintf("説明文等の合計数が最大の%d個を超えています", sectionValidation.paragsLenMax))
 	}
 
-	f, er := validParagraphs(tierData.Parags)
+	f, er = validParagraphs(tierData.Parags)
 	if !f {
 		return false, er
 	}
@@ -92,20 +92,30 @@ func validTier(tierData TierEditingData) (bool, *ErrorResponse) {
 
 	for _, v := range tierData.ReviewFactorParams {
 		// 評価項目名の文字数チェック
-		f, e := validText("評価項目名", "vtir-008", v.Name, true, -1, tierValidation.paramsLenMax, "", "")
+		f, er = validText("評価項目名", "vtir-008", v.Name, true, -1, tierValidation.paramsLenMax, "", "")
 		if !f {
-			return f, e
+			return f, er
 		}
 	}
 
 	for _, v := range tierData.ReviewFactorParams {
 		// 評価項目の重み範囲チェック
 		if v.IsPoint {
-			f, e := validInteger("評価項目名", "vtir-009", v.Weight, 0, 100)
+			f, er = validInteger("評価項目名", "vtir-009", v.Weight, 0, 100)
 			if !f {
-				return f, e
+				return f, er
 			}
 		}
+	}
+
+	f, er = validInteger("Tier上寄せ調整値", "vtir-010", tierData.PullingUp, 0, 40)
+	if !f {
+		return f, er
+	}
+
+	f, er = validInteger("Tier下寄せ調整値", "vtir-011", tierData.PullingDown, 0, 40)
+	if !f {
+		return f, er
 	}
 
 	return true, nil
@@ -200,7 +210,7 @@ func postReqTier(c echo.Context) error {
 		return c.JSON(400, MakeError("utir-008", ""))
 	}
 
-	err = db.CreateTier(session.UserId, tierId, tierData.Name, path, string(parags), tierData.PointType, string(params3))
+	err = db.CreateTier(session.UserId, tierId, tierData.Name, path, string(parags), tierData.PointType, string(params3), tierData.PullingUp, tierData.PullingDown)
 	// 投稿時間を記録
 	db.UpdateLastPostAt(session)
 	if err != nil {
@@ -354,7 +364,7 @@ func updateReqTier(c echo.Context) error {
 		}
 
 		// トランザクション内でTierを更新する
-		err = db.UpdateTierTx(tx, orgTier, session.UserId, tid, tierData.Name, path, tierData.ImageIsChanged, string(parags), tierData.PointType, string(newParamsStr))
+		err = db.UpdateTierTx(tx, orgTier, session.UserId, tid, tierData.Name, path, tierData.ImageIsChanged, string(parags), tierData.PointType, string(newParamsStr), tierData.PullingUp, tierData.PullingDown)
 		if err != nil {
 			return err
 		}
@@ -462,6 +472,8 @@ func makeTierData(tid string, user db.User, tier db.Tier, code string) (TierData
 		Reviews:            []ReviewData{},
 		PointType:          tier.PointType,
 		ReviewFactorParams: params,
+		PullingUp:          tier.PullingUp,
+		PullingDown:        tier.PullingDown,
 		CreatedAt:          common.DateToString(tier.CreatedAt),
 		UpdatedAt:          common.DateToString(tier.UpdatedAt),
 	}, nil

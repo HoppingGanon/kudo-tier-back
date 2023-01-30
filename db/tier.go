@@ -47,6 +47,8 @@ func CreateTier(
 	parags string,
 	pointType string,
 	reviewFactorParams string,
+	pullingUp int,
+	pullingDown int,
 ) error {
 	var tier Tier
 	if path == "nochange" {
@@ -58,6 +60,8 @@ func CreateTier(
 			Parags:       parags,
 			PointType:    pointType,
 			FactorParams: reviewFactorParams,
+			PullingUp:    pullingUp,
+			PullingDown:  pullingDown,
 		}
 	} else {
 		tier = Tier{
@@ -68,6 +72,8 @@ func CreateTier(
 			Parags:       parags,
 			PointType:    pointType,
 			FactorParams: reviewFactorParams,
+			PullingUp:    pullingUp,
+			PullingDown:  pullingDown,
 		}
 	}
 	tx := Db.Create(&tier)
@@ -85,6 +91,8 @@ func UpdateTierTx(
 	parags string,
 	pointType string,
 	factorParams string,
+	pullingUp int,
+	pullingDown int,
 ) error {
 	tier.TierId = tierId
 	tier.Name = name
@@ -94,6 +102,8 @@ func UpdateTierTx(
 	if imageIsChanged {
 		tier.ImageUrl = imageUrl
 	}
+	tier.PullingUp = pullingUp
+	tier.PullingDown = pullingDown
 	tx1 := tx.Save(&tier)
 	return tx1.Error
 }

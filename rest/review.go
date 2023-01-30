@@ -477,8 +477,10 @@ func getReqReviewPairs(c echo.Context) error {
 
 		// レビューデータの作成
 		reviewPairList[i] = ReviewDataWithParams{
-			Review: reviewData,
-			Params: parsedParams,
+			Review:      reviewData,
+			Params:      parsedParams,
+			PullingDown: tier.PullingDown,
+			PullingUp:   tier.PullingUp,
 		}
 	}
 	return c.JSON(200, reviewPairList)

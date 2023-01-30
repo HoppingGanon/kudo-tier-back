@@ -104,6 +104,8 @@ type TierData struct {
 	Reviews            []ReviewData      `json:"reviews"`
 	PointType          string            `json:"pointType"`
 	ReviewFactorParams []ReviewParamData `json:"reviewFactorParams"`
+	PullingUp          int               `json:"pullingUp"`
+	PullingDown        int               `json:"pullingDown"`
 	CreatedAt          string            `json:"createdAt"`
 	UpdatedAt          string            `json:"updatedAt"`
 }
@@ -125,8 +127,10 @@ type ReviewData struct {
 }
 
 type ReviewDataWithParams struct {
-	Review ReviewData        `json:"review"`
-	Params []ReviewParamData `json:"params"`
+	Review      ReviewData        `json:"review"`
+	Params      []ReviewParamData `json:"params"`
+	PullingDown int               `json:"pullingDown"`
+	PullingUp   int               `json:"pullingUp"`
 }
 
 type TierEditingData struct {
@@ -136,6 +140,8 @@ type TierEditingData struct {
 	Parags             []ParagEditingData `json:"parags"`
 	PointType          string             `json:"pointType"`
 	ReviewFactorParams []ReviewParamData  `json:"reviewFactorParams"`
+	PullingUp          int                `json:"pullingUp"`
+	PullingDown        int                `json:"pullingDown"`
 }
 
 type ReviewEditingData struct {
