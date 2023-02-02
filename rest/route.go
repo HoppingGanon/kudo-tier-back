@@ -9,7 +9,7 @@ import (
 func Route(e *echo.Echo) {
 	e.GET("/hello", getReqHello)
 	e.GET("/auth/tempsession", getReqTempSession)
-	e.GET("/auth/session", getReqSession)
+	e.POST("/auth/session", postReqSession)
 	e.DELETE("/auth/session", delReqSession)
 	e.POST("/user", postReqUser)
 	e.GET("/user/:uid", getReqUserData)

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"unicode/utf8"
 )
 
 // 文字列配列の中に指定した文字列が存在するかどうかチェックする関数
@@ -85,4 +86,28 @@ func ToSnakeCase(s string) string {
 		b.WriteRune(r)
 	}
 	return b.String()
+}
+
+func LenMult(s string) int {
+	return utf8.RuneCountInString(s)
+}
+
+func SubstringMult(s string, start int, count int) string {
+	if start < LenMult(s) {
+		return ""
+	} else if start+count < LenMult(s) {
+		return string([]rune(s)[start:])
+	} else {
+		return string([]rune(s)[start : start+count])
+	}
+}
+
+func Substring(s string, start int, count int) string {
+	if len(s) < start {
+		return ""
+	} else if len(s) < start+count {
+		return s[start:]
+	} else {
+		return s[start : start+count]
+	}
 }

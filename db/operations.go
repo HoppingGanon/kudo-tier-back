@@ -57,14 +57,21 @@ func WriteErrorLog(id string, ipAddress string, errorId string, operation string
 }
 
 func CheckSession(c echo.Context) (Session, error) {
-	sessionId := c.Request().Header.Get("sessionId")
+	token := c.Request().Header.Get("Authorization")
+	typeStr := common.Substring(token, 0, 7)
+
+	if typeStr != "Bearer " {
+		return Session{}, errors.New("認証タイプが異常です")
+	}
+	sessionId := common.Substring(token, 7, len(token)-7)
+
 	var session Session
 	var cnt int64
 	Db.Where("session_id = ?", sessionId).Find(&session).Count(&cnt)
 	if cnt == 1 {
 		return session, nil
 	}
-	return session, errors.New("セッションがありません")
+	return Session{}, errors.New("セッションがありません")
 }
 
 // 最小投稿時間をあけているかチェック
