@@ -24,6 +24,11 @@ type TempSession struct {
 	CodeChallenge string `json:"codeChallenge"`
 }
 
+type ClientTempSession struct {
+	SessionId         string `json:"sessionId"`
+	AuthorizationCode string `json:"authorizationCode"`
+}
+
 type Session struct {
 	SessionId       string `json:"sessionId"`
 	UserId          string `json:"userId"`
