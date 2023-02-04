@@ -42,12 +42,12 @@ func main() {
 // envLoad 環境変数のロード
 func loadEnv() {
 	// 開発環境のファイルを読み込む
-	err := godotenv.Load("develop.env")
+	err := godotenv.Load(".env.local")
 	if err != nil {
 		// もしファイルがなければ、ローカル環境ファイルを読み込む
-		err := godotenv.Load("local.env")
+		err := godotenv.Load(".env")
 		if err != nil {
-			log.Fatalf("local.envが見つかりませんでした")
+			log.Fatalf(".envおよび.env.localが見つかりませんでした")
 		}
 	}
 }
