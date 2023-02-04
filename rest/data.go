@@ -47,6 +47,12 @@ type TwitterToken struct {
 	Scope       string `json:"scope"`
 }
 
+type TwitterRequestToken1 struct {
+	Path          string `json:"path"`
+	RequestToken  string `json:"request_token"`
+	RequestSecret string `json:"request_secret"`
+}
+
 type TwitterUserData struct {
 	Id              string `json:"id"`
 	Name            string `json:"name"`

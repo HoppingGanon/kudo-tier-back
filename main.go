@@ -36,18 +36,18 @@ func main() {
 	rest.Route(e)
 
 	// リスナーポート番号
-	e.Logger.Fatal(e.Start(":8210"))
+	e.Logger.Fatal(e.Start(":" + os.Getenv("AP_PORT")))
 }
 
 // envLoad 環境変数のロード
 func loadEnv() {
 	// 開発環境のファイルを読み込む
-	err := godotenv.Load("develop.env")
+	err := godotenv.Load(".env.local")
 	if err != nil {
 		// もしファイルがなければ、ローカル環境ファイルを読み込む
-		err := godotenv.Load("local.env")
+		err := godotenv.Load(".env")
 		if err != nil {
-			log.Fatalf("local.envが見つかりませんでした")
+			log.Fatal(".env.localおよび.envが見つかりませんでした")
 		}
 	}
 }
