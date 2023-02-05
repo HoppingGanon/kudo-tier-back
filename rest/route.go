@@ -11,6 +11,7 @@ func Route(e *echo.Echo) {
 	e.GET("/auth/tempsession", getReqTempSession)
 	e.POST("/auth/session", postReqSession)
 	e.DELETE("/auth/session", delReqSession)
+	e.GET("/auth/check-session", getReqCheckSession)
 	e.POST("/user", postReqUser)
 	e.GET("/user/:uid", getReqUserData)
 	e.PATCH("/user/:uid", updateReqUser)
