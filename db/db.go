@@ -26,12 +26,12 @@ func InitDb() *gorm.DB {
 // データベースに接続する関数
 func connectDB() *gorm.DB {
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=%s",
-		os.Getenv("DB_HOST"),
-		os.Getenv("DB_USER"),
-		os.Getenv("DB_PASSWORD"),
-		os.Getenv("DB_NAME"),
-		os.Getenv("DB_PORT"),
-		os.Getenv("DB_TIMEZONE"))
+		os.Getenv("BACK_DB_HOST"),
+		os.Getenv("BACK_DB_USER"),
+		os.Getenv("BACK_DB_PASSWORD"),
+		os.Getenv("BACK_DB_NAME"),
+		os.Getenv("BACK_DB_PORT"),
+		os.Getenv("BACK_DB_TIMEZONE"))
 
 	var err error
 	Db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{

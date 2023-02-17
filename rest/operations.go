@@ -46,7 +46,7 @@ func getUserFile(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, MakeError("gen0-003", "不正なファイルが指定されました"))
 	}
 
-	path := os.Getenv("AP_FILE_PATH") + "/" + userId + "/" + data + "/" + id + "/" + fname
+	path := os.Getenv("BACK_AP_FILE_PATH") + "/" + userId + "/" + data + "/" + id + "/" + fname
 	// アクセスされたファイルを返す
 	return c.File(path)
 }
@@ -68,9 +68,9 @@ func daleteFile(errorCode string, delpath string) *ErrorResponse {
 }
 
 func deleteFolder(userId string, data string, id string, errorCode string, ipAddress string) {
-	err := os.RemoveAll((fmt.Sprintf("%s/%s/%s/%s", os.Getenv("AP_FILE_PATH"), userId, data, id)))
+	err := os.RemoveAll((fmt.Sprintf("%s/%s/%s/%s", os.Getenv("BACK_AP_FILE_PATH"), userId, data, id)))
 	if os.IsNotExist(err) {
-		db.WriteErrorLog(userId, ipAddress, errorCode, "フォルダが削除できませんでした", fmt.Sprintf("'%s/%s/%s/%s' ", os.Getenv("AP_FILE_PATH"), userId, data, id)+err.Error())
+		db.WriteErrorLog(userId, ipAddress, errorCode, "フォルダが削除できませんでした", fmt.Sprintf("'%s/%s/%s/%s' ", os.Getenv("BACK_AP_FILE_PATH"), userId, data, id)+err.Error())
 	}
 }
 
@@ -110,7 +110,7 @@ func savePicture(userId string, data string, id string, fname string, delpath st
 		}
 
 		resizedImg := resize.Thumbnail(uint(imgMaxEdge), uint(imgMaxEdge), img, resize.NearestNeighbor)
-		err = os.MkdirAll(fmt.Sprintf("%s/%s/%s/%s", os.Getenv("AP_FILE_PATH"), userId, data, id), os.ModePerm)
+		err = os.MkdirAll(fmt.Sprintf("%s/%s/%s/%s", os.Getenv("BACK_AP_FILE_PATH"), userId, data, id), os.ModePerm)
 		if err != nil {
 			return path, MakeError(errorCode+"-04", "画像の登録に失敗しました")
 		}
@@ -121,7 +121,7 @@ func savePicture(userId string, data string, id string, fname string, delpath st
 			if err != nil {
 				return "", MakeError(errorCode+"-05", "画像の登録に失敗しました しばらく時間を空けてもう一度実行してください")
 			}
-			path = fmt.Sprintf("%s/%s/%s/%s/%s%s.jpg", os.Getenv("AP_FILE_PATH"), userId, data, id, fname, code)
+			path = fmt.Sprintf("%s/%s/%s/%s/%s%s.jpg", os.Getenv("BACK_AP_FILE_PATH"), userId, data, id, fname, code)
 
 			_, err = os.Stat(path)
 			if os.IsNotExist(err) {

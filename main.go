@@ -1,11 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"os"
 
-	"github.com/joho/godotenv"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 
@@ -16,7 +16,7 @@ import (
 
 func main() {
 	// 環境変数の読み込み
-	loadEnv()
+	CheckEnvs()
 
 	// ログ出力場所の指定
 	loggingSettings("echo.log")
@@ -39,16 +39,24 @@ func main() {
 	e.Logger.Fatal(e.Start(":8210"))
 }
 
-// envLoad 環境変数のロード
-func loadEnv() {
-	// 開発環境のファイルを読み込む
-	err := godotenv.Load(".env.local")
-	if err != nil {
-		// もしファイルがなければ、ローカル環境ファイルを読み込む
-		err := godotenv.Load(".env")
-		if err != nil {
-			log.Fatalf(".envおよび.env.localが見つかりませんでした")
-		}
+// 環境変数の必須チェック
+func CheckEnvs() {
+	checkEnv("BACK_DB_HOST")
+	checkEnv("BACK_DB_PORT")
+	checkEnv("BACK_DB_NAME")
+	checkEnv("BACK_DB_USER")
+	checkEnv("BACK_DB_PASSWORD")
+	checkEnv("BACK_DB_TIMEZONE")
+	checkEnv("BACK_TW_CLIENT_ID")
+	checkEnv("BACK_TW_CLIENT_SEC")
+	checkEnv("BACK_TW_REDIRECT_URI")
+	checkEnv("BACK_AP_FILE_PATH")
+	checkEnv("BACK_AP_PORT")
+}
+
+func checkEnv(name string) {
+	if os.Getenv(name) == "" {
+		panic(fmt.Sprintf("環境変数'%s'がありません", name))
 	}
 }
 

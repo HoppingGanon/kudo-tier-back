@@ -17,7 +17,7 @@ func Route(e *echo.Echo) {
 	e.PATCH("/user/:uid", updateReqUser)
 	e.POST("/tier", postReqTier)
 	e.GET("/tier/:tid", getReqTier)
-	e.GET("/"+os.Getenv("AP_FILE_PATH")+"/:uid/:method/:id/:fname", getUserFile)
+	e.GET("/"+os.Getenv("BACK_AP_FILE_PATH")+"/:uid/:method/:id/:fname", getUserFile)
 	e.PATCH("/tier/:tid", updateReqTier)
 	e.DELETE("/tier/:rid", deleteReqTier)
 	e.GET("/tiers", getReqTiers)
