@@ -13,6 +13,8 @@ func Route(e *echo.Echo) {
 	e.DELETE("/auth/session", delReqSession)
 	e.GET("/auth/check-session", getReqCheckSession)
 	e.POST("/user", postReqUser)
+	e.DELETE("/user1/:uid", deleteUser1)
+	e.DELETE("/user2/:uid", deleteUser2)
 	e.GET("/user/:uid", getReqUserData)
 	e.PATCH("/user/:uid", updateReqUser)
 	e.POST("/tier", postReqTier)

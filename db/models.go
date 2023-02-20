@@ -15,12 +15,13 @@ type TempSession struct {
 
 // セッション
 type Session struct {
-	SessionID    string    `gorm:"primaryKey;not null"` // セッションID
-	UserId       string    `gorm:""`                    // ユーザーデータのID
-	ExpiredTime  time.Time `gorm:"not null"`            //セッションの有効期限
-	TwitterToken string    `gorm:"not null"`            // Twitterから与えられたトークン
-	IsNew        bool      `gorm:"not null"`            // ユーザー未登録状態フラグ
-	LastPostAt   time.Time `gorm:"not null;"`           // 直近の投稿時間
+	SessionID      string    `gorm:"primaryKey;not null"` // セッションID
+	UserId         string    `gorm:""`                    // ユーザーデータのID
+	ExpiredTime    time.Time `gorm:"not null"`            //セッションの有効期限
+	TwitterToken   string    `gorm:"not null"`            // Twitterから与えられたトークン
+	IsNew          bool      `gorm:"not null"`            // ユーザー未登録状態フラグ
+	LastPostAt     time.Time `gorm:"not null;"`           // 直近の投稿時間
+	DeleteCodeTime time.Time `gorm:""`                    // ユーザーを削除する際の確認コード生成時間
 }
 
 // ユーザーデータ

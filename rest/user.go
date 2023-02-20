@@ -2,12 +2,18 @@ package rest
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"net"
+	"os"
 	"strconv"
+	"time"
 
 	"github.com/labstack/echo"
+	"gorm.io/gorm"
 
+	"reviewmakerback/common"
 	db "reviewmakerback/db"
 )
 
@@ -262,4 +268,105 @@ func getReqLatestPostLists(c echo.Context) error {
 		}
 	}
 	return c.JSON(200, postListData)
+}
+
+// ユーザー削除の際のステップ1
+func deleteUser1(c echo.Context) error {
+	uid := c.Param("uid")
+
+	// セッションの存在チェック
+	session, err := db.CheckSession(c)
+	if err != nil {
+		return c.JSON(403, commonError.noSession)
+	}
+
+	// 編集ユーザーとTier所有ユーザーチェック
+	if session.UserId != uid {
+		return c.JSON(403, commonError.userNotEqual)
+	}
+
+	session.DeleteCodeTime = time.Now()
+
+	delcode := common.Substring(common.GetSHA256(session.SessionID+common.DateToString(session.DeleteCodeTime)), 0, 6)
+
+	if db.Db.Save(&session).Error != nil {
+		return c.JSON(400, MakeError("dus1-01", "削除コードの発行に失敗しました"))
+	}
+
+	requestIp := net.ParseIP(c.RealIP()).String()
+	db.WriteOperationLog(session.UserId, requestIp, "dus1", "")
+
+	return c.String(202, delcode)
+}
+
+// ユーザー削除の際のステップ1
+func deleteUser2(c echo.Context) error {
+	uid := c.Param("uid")
+	delcode := c.QueryParam("delcode")
+	requestIp := net.ParseIP(c.RealIP()).String()
+
+	// セッションの存在チェック
+	session, err := db.CheckSession(c)
+	if err != nil {
+		return c.JSON(403, commonError.noSession)
+	}
+
+	// 編集ユーザーとTier所有ユーザーチェック
+	if session.UserId != uid {
+		return c.JSON(403, commonError.userNotEqual)
+	}
+
+	if delcode != common.Substring(common.GetSHA256(session.SessionID+common.DateToString(session.DeleteCodeTime)), 0, 6) {
+		return c.JSON(400, MakeError("dus2-01", "削除コードが一致しません"))
+	} else if session.DeleteCodeTime.Add(time.Duration(60) * time.Second).Before(time.Now()) {
+		return c.JSON(400, MakeError("dus2-02", "削除コードの期限が切れています"))
+	}
+
+	result := db.Db.Transaction(func(tx *gorm.DB) error {
+		var user db.User
+		var cnt int64
+		tdb := tx.Where("user_id = ?", session.UserId).Find(&user)
+		if tdb.Error != nil {
+			return tdb.Error
+		}
+		if tdb.Count(&cnt); cnt != 1 {
+			return errors.New("ユーザーが存在しません")
+		}
+
+		tdb = tx.Where("user_id = ?", session.UserId).Delete(&db.Tier{})
+		if tdb.Error != nil {
+			return tdb.Error
+		}
+
+		tdb = tx.Where("user_id = ?", session.UserId).Delete(&db.Review{})
+		if tdb.Error != nil {
+			return tdb.Error
+		}
+
+		tdb = tx.Where("user_id = ?", session.UserId).Delete(&db.Session{})
+		if tdb.Error != nil {
+			return tdb.Error
+		}
+
+		tdb = tx.Where("user_id = ?", session.UserId).Delete(&db.User{})
+		if tdb.Error != nil {
+			return tdb.Error
+		}
+		return nil
+	})
+
+	if result != nil {
+		db.WriteErrorLog(session.UserId, requestIp, "dus2-01", "ユーザーの削除に失敗しました", result.Error())
+		return c.JSON(400, MakeError("dus2-03", "ユーザーの削除に失敗しました"))
+	}
+
+	// 全ファイルを削除するが、エラーが起こっても中断せず記録のみ残す
+	err = os.RemoveAll((fmt.Sprintf("%s/%s", os.Getenv("BACK_AP_FILE_PATH"), session.UserId)))
+	if err != nil && !os.IsNotExist(err) {
+		db.WriteErrorLog(session.UserId, requestIp, "dus2-05", "フォルダが削除できませんでした", fmt.Sprintf("'%s/%s' %s", os.Getenv("BACK_AP_FILE_PATH"), session.UserId, err.Error()))
+	}
+
+	db.WriteOperationLog(session.UserId, requestIp, "dus1", "")
+
+	return c.NoContent(204)
 }
