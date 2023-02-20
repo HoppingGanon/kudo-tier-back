@@ -36,7 +36,7 @@ func main() {
 	rest.Route(e)
 
 	// リスナーポート番号
-	e.Logger.Fatal(e.Start(":8210"))
+	e.Logger.Fatal(e.Start(":" + os.Getenv("AP_PORT")))
 }
 
 // 環境変数の必須チェック
