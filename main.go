@@ -50,6 +50,10 @@ func CheckEnvs() {
 	checkEnv("BACK_TW_CLIENT_ID")
 	checkEnv("BACK_TW_CLIENT_SEC")
 	checkEnv("BACK_TW_REDIRECT_URI")
+	checkEnv("BACK_TW1_APIKEY")
+	checkEnv("BACK_TW1_APISECRET")
+	checkEnv("BACK_TW1_ACCESSTOKEN")
+	checkEnv("BACK_TW1_ACCESSSEC")
 	checkEnv("BACK_AP_FILE_PATH")
 	checkEnv("BACK_AP_PORT")
 }
