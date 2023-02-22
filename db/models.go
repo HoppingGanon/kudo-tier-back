@@ -25,9 +25,11 @@ type Session struct {
 	ExpiredTime time.Time `gorm:"not null"`            //セッションの有効期限
 
 	LoginService   string `gorm:"not null"` // ログインに使用したサービス
-	TwitterToken   string `gorm:""`         // Twitterから与えられたアクセストークン(OAuth 2.0)
-	TwitterToken1  string `gorm:""`         // Twitterから与えられたアクセストークン(OAuth 1.0a)
-	TwitterSecret1 string `gorm:""`         // Twitterから与えられたアクセスシークレット(OAuth 1.0a)
+	LoginVersion   int    `gorm:"not null"` // ログインに使用したサービス
+	ServiceId      string `gorm:""`         // Twitterアカウントの固有ID(OA1 OA2)
+	TwitterToken   string `gorm:""`         // Twitterから与えられたアクセストークン(OA2)
+	TwitterToken1  string `gorm:""`         // Twitterから与えられたアクセストークン(OA1)
+	TwitterSecret1 string `gorm:""`         // Twitterから与えられたアクセスシークレット(OA1)
 
 	IsNew          bool      `gorm:"not null"`  // ユーザー未登録状態フラグ
 	LastPostAt     time.Time `gorm:"not null;"` // 直近の投稿時間

@@ -52,18 +52,26 @@ func postReqUser(c echo.Context) error {
 		return c.JSON(400, er)
 	}
 
-	// Twitterからユーザー情報の取得
-	b, err = getTwitterApi("https://api.twitter.com/2/users/me?user.fields=profile_image_url", session.TwitterToken)
-	if err != nil {
-		return c.JSON(403, MakeError("pusr-004", "Twitterからユーザー情報が取得できませんでした"))
-	}
-	var twitterUser TwitterUser
-	err = json.Unmarshal(b, &twitterUser)
-	if err != nil {
-		return c.JSON(403, MakeError("pusr-005", "Twitterから取得したユーザー情報が不正です"))
+	var twitterName2 string = ""
+	if session.LoginVersion == 2 {
+		if session.LoginService == "twitter" {
+			// Twitterからユーザー情報の取得
+			b, err = getTwitterApi("https://api.twitter.com/2/users/me?user.fields=profile_image_url", session.TwitterToken)
+			if err != nil {
+				return c.JSON(403, MakeError("pusr-004", "Twitterからユーザー情報が取得できませんでした"))
+			}
+		}
+		var twitterUser TwitterUser
+		err = json.Unmarshal(b, &twitterUser)
+		twitterName2 = twitterUser.Data.Id
+		if err != nil {
+			return c.JSON(403, MakeError("pusr-005", "Twitterから取得したユーザー情報が不正です"))
+		}
+	} else {
+		twitterName2 = session.ServiceId
 	}
 
-	user, err := db.CreateUser(twitterUser.Data.Id, userData.Name, userData.Profile, "")
+	user, err := db.CreateUser(session.ServiceId, userData.Name, userData.Profile, "")
 	if err != nil {
 		return c.JSON(400, MakeError("pusr-006", "ユーザーの作成に失敗しました"))
 	}
@@ -87,7 +95,7 @@ func postReqUser(c echo.Context) error {
 	return c.JSON(200, SelfUserData{
 		UserId:           user.UserId,
 		IsSelf:           true,
-		TwitterName:      twitterUser.Data.Id,
+		TwitterName:      twitterName2,
 		Name:             userData.Name,
 		Profile:          userData.Profile,
 		IconUrl:          path,

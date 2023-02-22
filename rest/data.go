@@ -55,10 +55,10 @@ type TwitterToken struct {
 }
 
 type TwitterToken1 struct {
-	oAuthToken       string `json:"oauth_token"`
-	oAuthTokenSecret string `json:"oauth_token_secret"`
-	userId           string `json:"user_id"`
-	screenName       string `json:"screen_name"`
+	OAuthToken       string `json:"oauth_token"`        // アクセストークン
+	OAuthTokenSecret string `json:"oauth_token_secret"` // アクセストークンシークレット
+	UserId           string `json:"user_id"`            // @名
+	ScreenName       string `json:"screen_name"`        // 表示名
 }
 
 type OAuth1RequestToken struct {
@@ -68,10 +68,10 @@ type OAuth1RequestToken struct {
 }
 
 type TwitterUserData struct {
-	Id              string `json:"id"`
-	Name            string `json:"name"`
-	UserName        string `json:"username"`
-	ProfileImageUrl string `json:"profile_image_url"`
+	Id              string `json:"id"`                // 固有ID
+	Name            string `json:"name"`              // @名
+	UserName        string `json:"username"`          // 表示名
+	ProfileImageUrl string `json:"profile_image_url"` // アイコン
 }
 type TwitterUser struct {
 	Data TwitterUserData `json:"data"`
