@@ -19,14 +19,21 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
+// ユーザーに送付する一時セッションと認証に必要な情報のペア
 type TempSession struct {
-	SessionId     string `json:"sessionId"`
-	CodeChallenge string `json:"codeChallenge"`
+	SessionId     string `json:"sessionId"`     // OA1, OA2 セッションID
+	CodeChallenge string `json:"codeChallenge"` // OA2 SHA256で確認するためのコード
+	Url           string `json:"url"`           // OA1 ユーザーが認証するためのページ
 }
 
+// ユーザーから返却される一時セッションと認証情報のペア
 type ClientTempSession struct {
-	SessionId         string `json:"sessionId"`
-	AuthorizationCode string `json:"authorizationCode"`
+	SessionId         string `json:"sessionId"`         // OA1, OA2 セッションID
+	AuthorizationCode string `json:"authorizationCode"` // OA2 認証コード
+	Service           string `json:"service"`           // OA1, OA2 連携サービス
+	Version           string `json:"version"`           // OA1, OA2 OAuth認証バージョン
+	OAuthToken        string `json:"oAuthToken"`        // OA1 発行済みのトークン
+	OAuthVerifier     string `json:"oAuthVerifier"`     // OA1 TierReviewsバックエンドで検証するコード
 }
 
 type Session struct {
@@ -47,7 +54,14 @@ type TwitterToken struct {
 	Scope       string `json:"scope"`
 }
 
-type TwitterRequestToken1 struct {
+type TwitterToken1 struct {
+	oAuthToken       string `json:"oauth_token"`
+	oAuthTokenSecret string `json:"oauth_token_secret"`
+	userId           string `json:"user_id"`
+	screenName       string `json:"screen_name"`
+}
+
+type OAuth1RequestToken struct {
 	Path          string `json:"path"`
 	RequestToken  string `json:"request_token"`
 	RequestSecret string `json:"request_secret"`

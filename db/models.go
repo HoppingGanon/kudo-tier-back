@@ -7,25 +7,31 @@ import (
 // 一時セッション
 // Twitter OAuth1.0a, 2.0認証が完了するまでの間、フロントとバックの間でデータを共有するために用いる
 type TempSession struct {
-	SessionID    string    `gorm:"primaryKey;not null"`      // 一時セッションID
-	AccessTime   time.Time `gorm:"not null"`                 // アクセスした時間
-	IpAddress    string    `gorm:"not null;default:0.0.0.0"` // セッション確立時のIPアドレス
-	CodeVerifier string    `gorm:"not null"`                 // TwitterのOAuth2.0認証でコード検証に用いるハッシュの生成元文字列
-	Token1       string    `gorm:"not null"`                 // TwitterのOAuth1.0a認証でTwitter認証サーバーから受け取るトークン
-	Secret1      string    `gorm:"not null"`                 // TwitterのOAuth1.0a認証でTwitter認証サーバーから受け取るハッシュ
+	SessionID  string    `gorm:"primaryKey;not null"`      // 一時セッションID
+	AccessTime time.Time `gorm:"not null"`                 // アクセスした時間
+	IpAddress  string    `gorm:"not null;default:0.0.0.0"` // セッション確立時のIPアドレス
+
+	LoginService  string `gorm:"not null"` // ログインに使用したサービス
+	LoginVersion  int    `gorm:"not null"` // ログインに使用したOAuthバージョン
+	CodeVerifier  string `gorm:""`         // OA2 OAuth2.0認証でコード検証に用いるハッシュの生成元文字列
+	RequestToken  string `gorm:""`         // OA1 OAuth1.0a認証で認証サーバーから受け取るトークン
+	RequestSecret string `gorm:""`         // OA1 OAuth1.0a認証で認証サーバーから受け取るハッシュ
 }
 
 // セッション
 type Session struct {
-	SessionID      string    `gorm:"primaryKey;not null"` // セッションID
-	UserId         string    `gorm:""`                    // ユーザーデータのID
-	ExpiredTime    time.Time `gorm:"not null"`            //セッションの有効期限
-	TwitterToken   string    `gorm:"not null"`            // Twitterから与えられたアクセストークン
-	TwitterToken1  string    `gorm:"not null"`            // Twitterから与えられたアクセストークン(OAuth 1.0a)
-	TwitterSecret1 string    `gorm:"not null"`            // Twitterから与えられたアクセスシークレット(OAuth 1.0a)
-	IsNew          bool      `gorm:"not null"`            // ユーザー未登録状態フラグ
-	LastPostAt     time.Time `gorm:"not null;"`           // 直近の投稿時間
-	DeleteCodeTime time.Time `gorm:""`                    // ユーザーを削除する際の確認コード生成時間
+	SessionID   string    `gorm:"primaryKey;not null"` // セッションID
+	UserId      string    `gorm:""`                    // ユーザーデータのID
+	ExpiredTime time.Time `gorm:"not null"`            //セッションの有効期限
+
+	LoginService   string `gorm:"not null"` // ログインに使用したサービス
+	TwitterToken   string `gorm:""`         // Twitterから与えられたアクセストークン(OAuth 2.0)
+	TwitterToken1  string `gorm:""`         // Twitterから与えられたアクセストークン(OAuth 1.0a)
+	TwitterSecret1 string `gorm:""`         // Twitterから与えられたアクセスシークレット(OAuth 1.0a)
+
+	IsNew          bool      `gorm:"not null"`  // ユーザー未登録状態フラグ
+	LastPostAt     time.Time `gorm:"not null;"` // 直近の投稿時間
+	DeleteCodeTime time.Time `gorm:""`          // ユーザーを削除する際の確認コード生成時間
 }
 
 // ユーザーデータ

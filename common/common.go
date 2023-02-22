@@ -93,9 +93,9 @@ func LenMult(s string) int {
 }
 
 func SubstringMult(s string, start int, count int) string {
-	if start < LenMult(s) {
+	if LenMult(s) < start {
 		return ""
-	} else if start+count < LenMult(s) {
+	} else if LenMult(s) < start+count {
 		return string([]rune(s)[start:])
 	} else {
 		return string([]rune(s)[start : start+count])
@@ -110,4 +110,18 @@ func Substring(s string, start int, count int) string {
 	} else {
 		return s[start : start+count]
 	}
+}
+
+func SplitQueryChain(s string) map[string]string {
+	ary := strings.Split(s, "&")
+	m := map[string]string{}
+	for _, s2 := range ary {
+		index := strings.Index(s2, "=")
+		if index > 0 && index < len(s)-1 {
+			m[s2[:index]] = s2[index+1:]
+		} else if index == len(s)-1 {
+			m[s2[:index-1]] = ""
+		}
+	}
+	return m
 }
