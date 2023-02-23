@@ -47,7 +47,6 @@ type Session struct {
 	TwitterName     string `json:"twitterName"`     // 表示名
 	TwitterIconUrl  string `json:"twitterIconUrl"`  // アイコン
 
-	GoogleId       string `json:"googleId"`
 	GoogleEmail    string `json:"googleEmail"`
 	GoogleImageUrl string `json:"googleImageUrl"`
 }
@@ -130,6 +129,8 @@ type SelfUserData struct {
 	AllowTwitterLink bool   `json:"allowTwitterLink"` // Twitterへのリンク許可
 	KeepSession      int    `json:"keepSession"`      // セッション保持時間(自分自身でのログイン時のみ開示)
 	TwitterId        string `json:"twitterId"`        // TwitterID(自分自身でのログイン時およびTwitter連携を許可した時のみ開示)
+	TwitterUserName  string `json:"twitterUserName"`  // Twitter@名(自分自身でのログイン時のみ開示)
+	GoogleEmail      string `json:"googleEmail"`      // Google Mailアドレス(自分自身でのログイン時のみ開示)
 	ReviewsCount     int64  `json:"reviewsCount"`     // 今までに投稿したレビュー数
 	TiersCount       int64  `json:"tiersCount"`       // 今までに投稿したTier数
 }

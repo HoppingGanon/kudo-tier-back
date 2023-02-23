@@ -204,6 +204,8 @@ func getReqUserData(c echo.Context) error {
 			IsSelf:           true,
 			IconUrl:          user.IconUrl,
 			TwitterId:        user.TwitterId,
+			TwitterUserName:  user.TwitterUserName,
+			GoogleEmail:      user.GoogleEmail,
 			Name:             user.Name,
 			Profile:          user.Profile,
 			AllowTwitterLink: user.AllowTwitterLink,
@@ -362,11 +364,7 @@ func deleteUser2(c echo.Context) error {
 			return tdb.Error
 		}
 
-		// 一時セッション削除
-		tdb = tx.Where("user_id = ?", session.UserId).Delete(&db.TempSession{})
-		if tdb.Error != nil {
-			return tdb.Error
-		}
+		// 一時セッション削除はUserIdを持っていない
 
 		// ユーザー削除
 		tdb = tx.Where("user_id = ?", session.UserId).Delete(&db.User{})

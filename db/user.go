@@ -75,7 +75,6 @@ func CreateUser(service string, name string, profile string, iconUrl string, twi
 			if tx.Error != nil {
 				return User{}, tx.Error
 			}
-
 			return user, nil
 		}
 	}
