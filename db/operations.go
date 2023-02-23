@@ -2,6 +2,7 @@ package db
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 	"time"
@@ -51,7 +52,7 @@ func WriteErrorLog(id string, ipAddress string, errorId string, operation string
 		Descriptions: descriptions,
 		CreatedAt:    time.Now(),
 	}
-
+	fmt.Printf("id=%s\nip=%s\nerrId=%s\nope=%s\ndes=%s\n", id, ipAddress, errorId, operation, descriptions)
 	// データベースに登録
 	Db.Create(log)
 }

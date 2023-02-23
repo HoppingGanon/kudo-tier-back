@@ -22,39 +22,57 @@ func ExistsUser(id string) bool {
 	return cnt == 1
 }
 
-func ExistsUserTId(tid string) bool {
+func ExistsUserTId(tid string) (bool, User) {
 	var user User
 	var cnt int64
 
-	Db.Where("twitter_name = ?", tid).Find(&user).Count(&cnt)
-	return cnt == 1
+	Db.Where("twitter_id = ?", tid).Find(&user).Count(&cnt)
+	return cnt > 0, user
 }
 
-func CreateUser(TwitterName string, name string, profile string, iconUrl string) (User, error) {
+func ExistsUserGId(gid string) (bool, User) {
+	var user User
+	var cnt int64
+
+	Db.Where("google_id = ?", gid).Find(&user).Count(&cnt)
+	return cnt > 0, user
+}
+
+func CreateUser(service string, name string, profile string, iconUrl string, twitterId string, twitterUserName string, googleId string, googleEmail string) (User, error) {
 	var id string
 	var err error
-	if ExistsUserTId(TwitterName) {
-		return User{}, errors.New("指定されたTwitterIDは登録済みです")
+	if service == "twitter" {
+		if f, u := ExistsUserTId(twitterId); f {
+			return u, errors.New("指定されたTwitterIDは登録済みです")
+		}
+	} else if service == "google" {
+		if f, u := ExistsUserGId(googleId); f {
+			return u, errors.New("指定されたGoogleIDは登録済みです")
+		}
 	}
 
 	for i := 0; i < retryCreateCnt; i++ {
 		// ランダムな文字列を生成して、IDにする
-		id, err = common.MakeRandomChars(idSize, TwitterName)
+		id, err = common.MakeRandomChars(idSize, twitterId)
 		if err != nil {
 			return User{}, err
 		}
 		if !ExistsUser(id) {
 			user := User{
-				TwitterName:      TwitterName,
 				UserId:           id,
 				Name:             name,
 				Profile:          profile,
 				IconUrl:          iconUrl,
 				AllowTwitterLink: false,
+				KeepSession:      3600,
+				TwitterId:        twitterId,
+				TwitterUserName:  twitterUserName,
+				GoogleId:         googleId,
+				GoogleEmail:      googleEmail,
 			}
 			tx := Db.Create(&user)
 
-			if err != nil {
+			if tx.Error != nil {
 				return User{}, tx.Error
 			}
 

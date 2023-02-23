@@ -13,7 +13,8 @@ type TempSession struct {
 
 	LoginService  string `gorm:"not null"` // ログインに使用したサービス
 	LoginVersion  int    `gorm:"not null"` // ログインに使用したOAuthバージョン
-	CodeVerifier  string `gorm:""`         // OA2 OAuth2.0認証でコード検証に用いるハッシュの生成元文字列
+	CodeVerifier  string `gorm:""`         // OA2 TwitterのOAuth2.0認証でコード検証に用いるハッシュの生成元文字列
+	State         string `gorm:""`         // OA2 OAuth2.0認証でコード検証に用いるstate
 	RequestToken  string `gorm:""`         // OA1 OAuth1.0a認証で認証サーバーから受け取るトークン
 	RequestSecret string `gorm:""`         // OA1 OAuth1.0a認証で認証サーバーから受け取るハッシュ
 }
@@ -24,12 +25,22 @@ type Session struct {
 	UserId      string    `gorm:""`                    // ユーザーデータのID
 	ExpiredTime time.Time `gorm:"not null"`            //セッションの有効期限
 
-	LoginService   string `gorm:"not null"` // ログインに使用したサービス
-	LoginVersion   int    `gorm:"not null"` // ログインに使用したサービス
-	ServiceId      string `gorm:""`         // Twitterアカウントの固有ID(OA1 OA2)
-	TwitterToken   string `gorm:""`         // Twitterから与えられたアクセストークン(OA2)
-	TwitterToken1  string `gorm:""`         // Twitterから与えられたアクセストークン(OA1)
-	TwitterSecret1 string `gorm:""`         // Twitterから与えられたアクセスシークレット(OA1)
+	LoginService string `gorm:"not null"` // ログインに使用したサービス
+	LoginVersion int    `gorm:"not null"` // ログインに使用したサービス
+
+	ServiceId string `gorm:"not null"` // 連携サービスンの固有ID(OA1 OA2)
+
+	TwitterIconUrl  string `gorm:""` // Twitter アイコンURL
+	TwitterUserName string `gorm:""` // Twitter @名
+	TwitterToken    string `gorm:""` // Twitterから与えられたアクセストークン(OA2)
+	TwitterToken1   string `gorm:""` // Twitterから与えられたアクセストークン(OA1)
+	TwitterSecret1  string `gorm:""` // Twitterから与えられたアクセスシークレット(OA1)
+
+	GoogleEmail        string    `gorm:""` // Google Email
+	GoogleImageUrl     string    `gorm:""` // Google 画像
+	GoogleAccessToken  string    `gorm:""` // Googleから与えられたアクセストークン
+	GoogleExpiry       time.Time `gorm:""` // Googleから与えられたアクセストークンの期限
+	GoogleRefreshToken string    `gorm:""` // Googleから与えられたアクセストークンのリフレッシュ用
 
 	IsNew          bool      `gorm:"not null"`  // ユーザー未登録状態フラグ
 	LastPostAt     time.Time `gorm:"not null;"` // 直近の投稿時間
@@ -38,15 +49,20 @@ type Session struct {
 
 // ユーザーデータ
 type User struct {
-	UserId           string    `gorm:"primaryKey;not null"`       // ランダムで決定するユーザー固有のID
-	TwitterName      string    `gorm:"index:unique;not null"`     // TwitterID(自分自身でのログイン時およびTwitter連携を許可した時のみ開示)
-	IconUrl          string    `gorm:"not null;default:no image"` // TwitterのアイコンURL
-	Name             string    `gorm:"not null;default:no name"`  // 登録名
-	Profile          string    `gorm:"not null"`                  // 自己紹介文
-	AllowTwitterLink bool      `gorm:"not null;default:false"`    // Twitterへのリンク許可
-	KeepSession      int       `gorm:"not null;default:3600"`     // セッション保持時間(秒)
-	CreatedAt        time.Time `gorm:""`                          // 作成日
-	UpdatedAt        time.Time `gorm:""`                          // 更新日
+	UserId           string `gorm:"primaryKey;not null"`       // ランダムで決定するユーザー固有のID
+	IconUrl          string `gorm:"not null;default:no image"` // TwitterのアイコンURL
+	Name             string `gorm:"not null;default:no name"`  // 登録名
+	Profile          string `gorm:"not null"`                  // 自己紹介文
+	AllowTwitterLink bool   `gorm:"not null;default:false"`    // Twitterへのリンク許可
+	KeepSession      int    `gorm:"not null;default:3600"`     // セッション保持時間(秒)
+
+	TwitterId       string `gorm:""` // TwitterID(自分自身でのログイン時およびTwitter連携を許可した時のみ開示)
+	TwitterUserName string `gorm:""` // @名
+	GoogleId        string `gorm:""` // Google 固有ID
+	GoogleEmail     string `gorm:""` // Google Gmailアドレス
+
+	CreatedAt time.Time `gorm:""` // 作成日
+	UpdatedAt time.Time `gorm:""` // 更新日
 }
 
 // アクセスログ

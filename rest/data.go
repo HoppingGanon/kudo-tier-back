@@ -21,9 +21,8 @@ type ErrorResponse struct {
 
 // ユーザーに送付する一時セッションと認証に必要な情報のペア
 type TempSession struct {
-	SessionId     string `json:"sessionId"`     // OA1, OA2 セッションID
-	CodeChallenge string `json:"codeChallenge"` // OA2 SHA256で確認するためのコード
-	Url           string `json:"url"`           // OA1 ユーザーが認証するためのページ
+	SessionId string `json:"sessionId"` // OA1, OA2 セッションID
+	Url       string `json:"url"`       // OA1, OA2 ユーザーが認証するためのページ
 }
 
 // ユーザーから返却される一時セッションと認証情報のペア
@@ -32,19 +31,25 @@ type ClientTempSession struct {
 	AuthorizationCode string `json:"authorizationCode"` // OA2 認証コード
 	Service           string `json:"service"`           // OA1, OA2 連携サービス
 	Version           string `json:"version"`           // OA1, OA2 OAuth認証バージョン
+	State             string `json:"state"`             // OA2 発行元をチェックするためのstate
 	OAuthToken        string `json:"oAuthToken"`        // OA1 発行済みのトークン
 	OAuthVerifier     string `json:"oAuthVerifier"`     // OA1 TierReviewsバックエンドで検証するコード
 }
 
 type Session struct {
-	SessionId       string `json:"sessionId"`
-	UserId          string `json:"userId"`
-	ExpiredTime     string `json:"expiredTime"`
-	IsNew           bool   `json:"isNew"`
-	TwitterName     string `json:"twitterName"`
-	TwitterUserName string `json:"twitterUserName"`
-	TwitterIconUrl  string `json:"twitterIconUrl"`
-	IconUrl         string `json:"iconUrl"`
+	SessionId   string `json:"sessionId"`
+	UserId      string `json:"userId"`
+	ExpiredTime string `json:"expiredTime"`
+	IsNew       bool   `json:"isNew"`
+	IconUrl     string `json:"iconUrl"`
+
+	TwitterUserName string `json:"twitterUserName"` // @名
+	TwitterName     string `json:"twitterName"`     // 表示名
+	TwitterIconUrl  string `json:"twitterIconUrl"`  // アイコン
+
+	GoogleId       string `json:"googleId"`
+	GoogleEmail    string `json:"googleEmail"`
+	GoogleImageUrl string `json:"googleImageUrl"`
 }
 
 type TwitterToken struct {
@@ -69,12 +74,23 @@ type OAuth1RequestToken struct {
 
 type TwitterUserData struct {
 	Id              string `json:"id"`                // 固有ID
-	Name            string `json:"name"`              // @名
-	UserName        string `json:"username"`          // 表示名
+	UserName        string `json:"username"`          // @名
+	Name            string `json:"name"`              // 表示名
 	ProfileImageUrl string `json:"profile_image_url"` // アイコン
 }
 type TwitterUser struct {
 	Data TwitterUserData `json:"data"`
+}
+
+type GoogleInfoData struct {
+	Id            string `json:"id"`             // ユーザーID
+	Email         string `json:"email"`          // メールアドレス
+	VerifiedEmail bool   `json:"verified_email"` //
+	Name          string `json:"name"`           // フルネーム
+	GivenName     string `json:"given_name"`     // 名前
+	FamilyName    string `json:"family_name"`    // 苗字
+	Picture       string `json:"picture"`        // プロフィール画像
+	Local         string `json:"locale"`         // 国
 }
 
 type UserCreatingData struct {
@@ -100,7 +116,7 @@ type UserData struct {
 	Name             string `json:"name"`             // 登録名
 	Profile          string `json:"profile"`          // 自己紹介文
 	AllowTwitterLink bool   `json:"allowTwitterLink"` // Twitterへのリンク許可
-	TwitterName      string `json:"twitterName"`      // TwitterID(自分自身でのログイン時およびTwitter連携を許可した時のみ開示)
+	TwitterId        string `json:"twitterId"`        // TwitterID(自分自身でのログイン時およびTwitter連携を許可した時のみ開示)
 	ReviewsCount     int64  `json:"reviewsCount"`     // 今までに投稿したレビュー数
 	TiersCount       int64  `json:"tiersCount"`       // 今までに投稿したTier数
 }
@@ -113,7 +129,7 @@ type SelfUserData struct {
 	Profile          string `json:"profile"`          // 自己紹介文
 	AllowTwitterLink bool   `json:"allowTwitterLink"` // Twitterへのリンク許可
 	KeepSession      int    `json:"keepSession"`      // セッション保持時間(自分自身でのログイン時のみ開示)
-	TwitterName      string `json:"twitterName"`      // TwitterID(自分自身でのログイン時およびTwitter連携を許可した時のみ開示)
+	TwitterId        string `json:"twitterId"`        // TwitterID(自分自身でのログイン時およびTwitter連携を許可した時のみ開示)
 	ReviewsCount     int64  `json:"reviewsCount"`     // 今までに投稿したレビュー数
 	TiersCount       int64  `json:"tiersCount"`       // 今までに投稿したTier数
 }

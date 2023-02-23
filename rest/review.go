@@ -344,14 +344,14 @@ func makeReviewData(rid string, user db.User, review db.Review, pointType string
 	} else {
 		err = json.Unmarshal([]byte(review.Sections), &sections)
 		if err != nil {
-			return ReviewData{}, MakeError(code+"-01", "説明文の取得に失敗しました")
+			return ReviewData{}, MakeError(code+"-001", "説明文の取得に失敗しました")
 		}
 	}
 
 	var factors []ReviewFactorData
 	err = json.Unmarshal([]byte(review.ReviewFactors), &factors)
 	if err != nil {
-		return ReviewData{}, MakeError(code+"-02", "評価点・情報の取得に失敗しました")
+		return ReviewData{}, MakeError(code+"-002", "評価点・情報の取得に失敗しました")
 	}
 
 	return ReviewData{

@@ -56,6 +56,7 @@ func CheckEnvs() {
 	checkEnv("BACK_TW1_ACCESSSEC")
 	checkEnv("BACK_AP_FILE_PATH")
 	checkEnv("BACK_AP_PORT")
+	checkEnv("BACK_GG_CONFJSON")
 }
 
 func checkEnv(name string) {

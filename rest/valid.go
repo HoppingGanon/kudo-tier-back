@@ -98,16 +98,16 @@ func MakeError(code string, message string) *ErrorResponse {
 func validText(title string, code string, text string, required bool, min int, max int, reg string, regMessage string) (bool, *ErrorResponse) {
 	if required && len(text) == 0 {
 		// 必須入力
-		return false, MakeError(code+"-00", fmt.Sprintf("%sは必須入力です", title))
+		return false, MakeError(code+"-000", fmt.Sprintf("%sは必須入力です", title))
 	} else if min > 0 && utf8.RuneCountInString(text) < min {
 		// 最低文字数
-		return false, MakeError(code+"-01", fmt.Sprintf("%sは最低でも%d文字の入力が必要です", title, min))
+		return false, MakeError(code+"-001", fmt.Sprintf("%sは最低でも%d文字の入力が必要です", title, min))
 	} else if max > 0 && utf8.RuneCountInString(text) > max {
 		// 最大文字数
-		return false, MakeError(code+"-02", fmt.Sprintf("%sは%d文字以下で入力する必要があります", title, max))
+		return false, MakeError(code+"-002", fmt.Sprintf("%sは%d文字以下で入力する必要があります", title, max))
 	} else if reg != "" && !regexp.MustCompile(reg).MatchString(text) {
 		// 正規表現
-		return false, MakeError(code+"-03", fmt.Sprintf("%sは%sで入力する必要があります", title, regMessage))
+		return false, MakeError(code+"-003", fmt.Sprintf("%sは%sで入力する必要があります", title, regMessage))
 	}
 	return true, nil
 }
@@ -115,9 +115,9 @@ func validText(title string, code string, text string, required bool, min int, m
 // 整数に対するバリデーション
 func validInteger(title string, code string, val int, min int, max int) (bool, *ErrorResponse) {
 	if val < min {
-		return false, MakeError(code+"-00", fmt.Sprintf("%sは%d以上の整数を入力してください", title, min))
+		return false, MakeError(code+"-000", fmt.Sprintf("%sは%d以上の整数を入力してください", title, min))
 	} else if val > max {
-		return false, MakeError(code+"-01", fmt.Sprintf("%sは%d以下の整数を入力してください", title, max))
+		return false, MakeError(code+"-001", fmt.Sprintf("%sは%d以下の整数を入力してください", title, max))
 	}
 	return true, nil
 }
@@ -125,9 +125,9 @@ func validInteger(title string, code string, val int, min int, max int) (bool, *
 // 浮動小数に対するバリデーション
 func ValidFloat(title string, code string, val float64, min float64, max float64) (bool, *ErrorResponse) {
 	if val < min {
-		return false, MakeError(code+"-00", fmt.Sprintf("%sは%f以上の数値を入力してください", title, min))
+		return false, MakeError(code+"-000", fmt.Sprintf("%sは%f以上の数値を入力してください", title, min))
 	} else if val > max {
-		return false, MakeError(code+"-01", fmt.Sprintf("%sは%f以下の数値を入力してください", title, max))
+		return false, MakeError(code+"-001", fmt.Sprintf("%sは%f以下の数値を入力してください", title, max))
 	}
 	return true, nil
 }

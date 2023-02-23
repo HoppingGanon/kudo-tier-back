@@ -447,14 +447,14 @@ func makeTierData(tid string, user db.User, tier db.Tier, code string) (TierData
 	} else {
 		err = json.Unmarshal([]byte(tier.Parags), &parags)
 		if err != nil {
-			return TierData{}, MakeError(code+"-01", "説明文の取得に失敗しました")
+			return TierData{}, MakeError(code+"-001", "説明文の取得に失敗しました")
 		}
 	}
 
 	var params []ReviewParamData
 	err = json.Unmarshal([]byte(tier.FactorParams), &params)
 	if err != nil {
-		return TierData{}, MakeError(code+"-02", "評価項目の取得に失敗しました")
+		return TierData{}, MakeError(code+"-002", "評価項目の取得に失敗しました")
 	}
 
 	for i := range params {

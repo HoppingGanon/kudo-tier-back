@@ -52,27 +52,29 @@ func postReqUser(c echo.Context) error {
 		return c.JSON(400, er)
 	}
 
-	var twitterName2 string = ""
-	if session.LoginVersion == 2 {
-		if session.LoginService == "twitter" {
-			// Twitterからユーザー情報の取得
-			b, err = getTwitterApi("https://api.twitter.com/2/users/me?user.fields=profile_image_url", session.TwitterToken)
-			if err != nil {
-				return c.JSON(403, MakeError("pusr-004", "Twitterからユーザー情報が取得できませんでした"))
-			}
-		}
-		var twitterUser TwitterUser
-		err = json.Unmarshal(b, &twitterUser)
-		twitterName2 = twitterUser.Data.Id
-		if err != nil {
-			return c.JSON(403, MakeError("pusr-005", "Twitterから取得したユーザー情報が不正です"))
-		}
-	} else {
-		twitterName2 = session.ServiceId
+	var twitterId string
+	var googleId string
+
+	if session.LoginService == "twitter" {
+		twitterId = session.ServiceId
+	} else if session.LoginService == "google" {
+		googleId = session.ServiceId
 	}
 
-	user, err := db.CreateUser(session.ServiceId, userData.Name, userData.Profile, "")
+	// アイコンはとりあえず設定しない
+	user, err := db.CreateUser(
+		session.LoginService,
+		userData.Name,
+		userData.Profile,
+		"",
+		twitterId,
+		session.TwitterUserName,
+		googleId,
+		session.GoogleEmail,
+	)
 	if err != nil {
+		requestIp := net.ParseIP(c.RealIP()).String()
+		db.WriteErrorLog(session.UserId, requestIp, "pusr-006", "ユーザーの作成に失敗しました", err.Error())
 		return c.JSON(400, MakeError("pusr-006", "ユーザーの作成に失敗しました"))
 	}
 
@@ -87,6 +89,7 @@ func postReqUser(c echo.Context) error {
 		return c.JSON(400, er)
 	}
 
+	// 後からアイコンを変更する
 	db.UpdateUser(user, userData.Name, userData.Profile, path, true, false, 3600)
 
 	requestIp := net.ParseIP(c.RealIP()).String()
@@ -95,7 +98,7 @@ func postReqUser(c echo.Context) error {
 	return c.JSON(200, SelfUserData{
 		UserId:           user.UserId,
 		IsSelf:           true,
-		TwitterName:      twitterName2,
+		TwitterId:        twitterId,
 		Name:             userData.Name,
 		Profile:          userData.Profile,
 		IconUrl:          path,
@@ -200,7 +203,7 @@ func getReqUserData(c echo.Context) error {
 			UserId:           user.UserId,
 			IsSelf:           true,
 			IconUrl:          user.IconUrl,
-			TwitterName:      user.TwitterName,
+			TwitterId:        user.TwitterId,
 			Name:             user.Name,
 			Profile:          user.Profile,
 			AllowTwitterLink: user.AllowTwitterLink,
@@ -216,7 +219,7 @@ func getReqUserData(c echo.Context) error {
 			UserId:           user.UserId,
 			IsSelf:           false,
 			IconUrl:          user.IconUrl,
-			TwitterName:      "",
+			TwitterId:        "",
 			Name:             user.Name,
 			Profile:          user.Profile,
 			AllowTwitterLink: user.AllowTwitterLink,
@@ -227,7 +230,7 @@ func getReqUserData(c echo.Context) error {
 		// 送信元ユーザーと参照先ユーザーが異なる場合またはそもそもセッションが無い場合
 		userData.IsSelf = false
 		if userData.AllowTwitterLink {
-			userData.TwitterName = user.TwitterName
+			userData.TwitterId = user.TwitterId
 		}
 		return c.JSON(200, userData)
 	}
@@ -298,7 +301,7 @@ func deleteUser1(c echo.Context) error {
 	delcode := common.Substring(common.GetSHA256(session.SessionID+common.DateToString(session.DeleteCodeTime)), 0, 6)
 
 	if db.Db.Save(&session).Error != nil {
-		return c.JSON(400, MakeError("dus1-01", "削除コードの発行に失敗しました"))
+		return c.JSON(400, MakeError("dus1-001", "削除コードの発行に失敗しました"))
 	}
 
 	requestIp := net.ParseIP(c.RealIP()).String()
@@ -325,9 +328,9 @@ func deleteUser2(c echo.Context) error {
 	}
 
 	if delcode != common.Substring(common.GetSHA256(session.SessionID+common.DateToString(session.DeleteCodeTime)), 0, 6) {
-		return c.JSON(400, MakeError("dus2-01", "削除コードが一致しません"))
+		return c.JSON(400, MakeError("dus2-001", "削除コードが一致しません"))
 	} else if session.DeleteCodeTime.Add(time.Duration(60) * time.Second).Before(time.Now()) {
-		return c.JSON(400, MakeError("dus2-02", "削除コードの期限が切れています"))
+		return c.JSON(400, MakeError("dus2-002", "削除コードの期限が切れています"))
 	}
 
 	result := db.Db.Transaction(func(tx *gorm.DB) error {
@@ -365,7 +368,7 @@ func deleteUser2(c echo.Context) error {
 
 	if result != nil {
 		db.WriteErrorLog(session.UserId, requestIp, "dus2-01", "ユーザーの削除に失敗しました", result.Error())
-		return c.JSON(400, MakeError("dus2-03", "ユーザーの削除に失敗しました"))
+		return c.JSON(400, MakeError("dus2-003", "ユーザーの削除に失敗しました"))
 	}
 
 	// 全ファイルを削除するが、エラーが起こっても中断せず記録のみ残す
