@@ -74,8 +74,8 @@ func postReqUser(c echo.Context) error {
 	)
 	if err != nil {
 		requestIp := net.ParseIP(c.RealIP()).String()
-		db.WriteErrorLog(session.UserId, requestIp, "pusr-006", "ユーザーの作成に失敗しました", err.Error())
-		return c.JSON(400, MakeError("pusr-006", "ユーザーの作成に失敗しました"))
+		db.WriteErrorLog(session.UserId, requestIp, "pusr-004", "ユーザーの作成に失敗しました", err.Error())
+		return c.JSON(400, MakeError("pusr-004", "ユーザーの作成に失敗しました"))
 	}
 
 	session.UserId = user.UserId
@@ -84,7 +84,7 @@ func postReqUser(c echo.Context) error {
 	}
 
 	// 画像の保存
-	path, er := savePicture(user.UserId, "user", "user", "icon_", "", userData.IconBase64, "prev-009", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
+	path, er := savePicture(user.UserId, "user", "user", "icon_", "", userData.IconBase64, "prev-005", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
 	if er != nil {
 		return c.JSON(400, er)
 	}
@@ -251,7 +251,7 @@ func getReqLatestPostLists(c echo.Context) error {
 	}
 
 	if !db.ExistsUser(uid) {
-		return c.JSON(404, MakeError("gpls-004", "ユーザーが存在しません"))
+		return c.JSON(404, MakeError("gpls-002", "ユーザーが存在しません"))
 	}
 
 	var tiers []db.Tier
@@ -344,21 +344,31 @@ func deleteUser2(c echo.Context) error {
 			return errors.New("ユーザーが存在しません")
 		}
 
+		// Tier削除
 		tdb = tx.Where("user_id = ?", session.UserId).Delete(&db.Tier{})
 		if tdb.Error != nil {
 			return tdb.Error
 		}
 
+		// レビュー削除
 		tdb = tx.Where("user_id = ?", session.UserId).Delete(&db.Review{})
 		if tdb.Error != nil {
 			return tdb.Error
 		}
 
+		// セッション削除
 		tdb = tx.Where("user_id = ?", session.UserId).Delete(&db.Session{})
 		if tdb.Error != nil {
 			return tdb.Error
 		}
 
+		// 一時セッション削除
+		tdb = tx.Where("user_id = ?", session.UserId).Delete(&db.TempSession{})
+		if tdb.Error != nil {
+			return tdb.Error
+		}
+
+		// ユーザー削除
 		tdb = tx.Where("user_id = ?", session.UserId).Delete(&db.User{})
 		if tdb.Error != nil {
 			return tdb.Error
@@ -367,17 +377,16 @@ func deleteUser2(c echo.Context) error {
 	})
 
 	if result != nil {
-		db.WriteErrorLog(session.UserId, requestIp, "dus2-01", "ユーザーの削除に失敗しました", result.Error())
+		db.WriteErrorLog(session.UserId, requestIp, "dus2-003", "ユーザーの削除に失敗しました", result.Error())
 		return c.JSON(400, MakeError("dus2-003", "ユーザーの削除に失敗しました"))
 	}
 
 	// 全ファイルを削除するが、エラーが起こっても中断せず記録のみ残す
 	err = os.RemoveAll((fmt.Sprintf("%s/%s", os.Getenv("BACK_AP_FILE_PATH"), session.UserId)))
 	if err != nil && !os.IsNotExist(err) {
-		db.WriteErrorLog(session.UserId, requestIp, "dus2-05", "フォルダが削除できませんでした", fmt.Sprintf("'%s/%s' %s", os.Getenv("BACK_AP_FILE_PATH"), session.UserId, err.Error()))
+		db.WriteErrorLog(session.UserId, requestIp, "dus2-004", "フォルダが削除できませんでした", fmt.Sprintf("'%s/%s' %s", os.Getenv("BACK_AP_FILE_PATH"), session.UserId, err.Error()))
 	}
 
-	db.WriteOperationLog(session.UserId, requestIp, "dus1", "")
-
+	db.WriteOperationLog(session.UserId, requestIp, "dus2", "")
 	return c.NoContent(204)
 }

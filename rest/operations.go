@@ -31,19 +31,19 @@ func getUserFile(c echo.Context) error {
 	// 不正なファイル名へのアクセスを防ぐ
 	if !common.TestRegexp(`^[a-zA-Z0-9]*$`, userId) {
 		// ユーザーID
-		return c.JSON(http.StatusBadRequest, MakeError("gen0-000", "不正なディレクトリが指定されました"))
+		return c.JSON(http.StatusBadRequest, MakeError("gen0-001", "不正なディレクトリが指定されました"))
 	}
 	if !common.Contains(data, []string{"tier", "review", "user"}) {
 		// データ(機能種別)
-		return c.JSON(http.StatusBadRequest, MakeError("gen0-001", "不正なディレクトリが指定されました"))
+		return c.JSON(http.StatusBadRequest, MakeError("gen0-002", "不正なディレクトリが指定されました"))
 	}
 	if !common.TestRegexp(`^[a-zA-Z0-9]*$`, id) {
 		// ID
-		return c.JSON(http.StatusBadRequest, MakeError("gen0-002", "不正なディレクトリが指定されました"))
+		return c.JSON(http.StatusBadRequest, MakeError("gen0-003", "不正なディレクトリが指定されました"))
 	}
 	if !common.TestRegexp(`^[a-zA-Z0-9/._]*$`, fname) {
 		// ファイル名
-		return c.JSON(http.StatusBadRequest, MakeError("gen0-003", "不正なファイルが指定されました"))
+		return c.JSON(http.StatusBadRequest, MakeError("gen0-004", "不正なファイルが指定されました"))
 	}
 
 	path := os.Getenv("BACK_AP_FILE_PATH") + "/" + userId + "/" + data + "/" + id + "/" + fname
@@ -60,7 +60,7 @@ func daleteFile(errorCode string, delpath string) *ErrorResponse {
 			err = os.Remove(delpath)
 			if err != nil {
 				// エラーコードはsavePicと重複
-				return MakeError(errorCode+"-010", "画像の削除に失敗しました")
+				return MakeError(errorCode+"-01", "画像の削除に失敗しました")
 			}
 		}
 	}

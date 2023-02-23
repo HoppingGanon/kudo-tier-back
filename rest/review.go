@@ -57,20 +57,20 @@ func validReview(reviewData ReviewEditingData, factorParams []ReviewParamData, p
 
 	// 評点のチェック
 	if reviewData.ReviewFactors == nil {
-		return false, MakeError("vtir-002", "レビュー評点や情報がNULLです")
+		return false, MakeError("vtir-003", "レビュー評点や情報がNULLです")
 	} else if len(reviewData.ReviewFactors) != len(factorParams) {
-		return false, MakeError("vtir-003", "Tierの評価項目数とレビューの評点・情報の数が一致しません")
+		return false, MakeError("vtir-004", "Tierの評価項目数とレビューの評点・情報の数が一致しません")
 	}
 	for i, factor := range reviewData.ReviewFactors {
 		if factorParams[i].IsPoint {
 			if pointType != "unlimited" {
-				f, e = ValidFloat("評価情報", "vrev-004", float64(factor.Point), 0, 100)
+				f, e = ValidFloat("評価情報", "vrev-005", float64(factor.Point), 0, 100)
 				if !f {
 					return false, e
 				}
 			}
 		} else {
-			f, e = validText("評価情報", "vrev-004", factor.Info, false, -1, reviewValidation.factorInfoLenMax, "", "")
+			f, e = validText("評価情報", "vrev-006", factor.Info, false, -1, reviewValidation.factorInfoLenMax, "", "")
 			if !f {
 				return false, e
 			}
@@ -79,10 +79,10 @@ func validReview(reviewData ReviewEditingData, factorParams []ReviewParamData, p
 
 	// セクションのチェック
 	if reviewData.Sections == nil {
-		return false, MakeError("vtir-005", "説明文等がNULLです")
+		return false, MakeError("vtir-007", "説明文等がNULLです")
 	}
 	if len(reviewData.Sections) > reviewValidation.sectionLenMax {
-		return false, MakeError("vtir-005", "説明文等がNULLです")
+		return false, MakeError("vtir-008", "説明文等がNULLです")
 	}
 	for _, sec := range reviewData.Sections {
 		f, e = validText("見出し", "vrev-006", sec.Title, false, -1, sectionValidation.sectionTitleLen, "", "")
@@ -98,7 +98,7 @@ func validReview(reviewData ReviewEditingData, factorParams []ReviewParamData, p
 	// 画像が既定のサイズ以下であることを確認する
 	if reviewData.IconBase64 != "nochange" {
 		if len(reviewData.IconBase64) > int(reviewValidation.iconMaxBytes*1024*8/6) {
-			return false, MakeError("vrev-007", "画像のサイズが大きすぎます")
+			return false, MakeError("vrev-009", "画像のサイズが大きすぎます")
 		}
 	}
 
@@ -176,7 +176,7 @@ func postReqReview(c echo.Context) error {
 	var er *ErrorResponse
 	if reviewData.IconIsChanged {
 		// 画像の保存
-		path, er = savePicture(session.UserId, "review", reviewId, "icon_", "", reviewData.IconBase64, "prev-009", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
+		path, er = savePicture(session.UserId, "review", reviewId, "icon_", "", reviewData.IconBase64, "prev-007", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
 		if er != nil {
 			return c.JSON(400, er)
 		}
@@ -194,7 +194,7 @@ func postReqReview(c echo.Context) error {
 	if err != nil {
 		// 新しく作成した途中の画像ファイルを削除
 		deleteSectionImg(madeSections)
-		return c.JSON(400, MakeError("prev-007", ""))
+		return c.JSON(400, MakeError("prev-008", ""))
 	}
 
 	// 使用しなくなったファイルを強制削除(POSTならば存在しない)
@@ -206,8 +206,8 @@ func postReqReview(c echo.Context) error {
 	if err != nil {
 		// 新しく作成した途中の画像ファイルを削除
 		deleteSectionImg(madeSections)
-		db.WriteErrorLog(session.UserId, requestIp, "prev-010", "レビューの更新に失敗しました", err.Error())
-		return c.JSON(400, MakeError("prev-010", "レビューの更新に失敗しました"))
+		db.WriteErrorLog(session.UserId, requestIp, "prev-009", "レビューの更新に失敗しました", err.Error())
+		return c.JSON(400, MakeError("prev-009", "レビューの更新に失敗しました"))
 	}
 
 	db.WriteOperationLog(session.UserId, requestIp, "prev", reviewId)
@@ -282,7 +282,7 @@ func updateReqReview(c echo.Context) error {
 	var er *ErrorResponse
 	if reviewData.IconIsChanged {
 		// 画像の保存
-		path, er = savePicture(session.UserId, "review", orgReview.ReviewId, "icon_", orgReview.IconUrl, reviewData.IconBase64, "urev-006", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
+		path, er = savePicture(session.UserId, "review", orgReview.ReviewId, "icon_", orgReview.IconUrl, reviewData.IconBase64, "urev-007", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
 		if er != nil {
 			return c.JSON(400, er)
 		}
@@ -293,7 +293,7 @@ func updateReqReview(c echo.Context) error {
 	var orgSections []SectionData
 	err = json.Unmarshal([]byte(orgReview.Sections), &orgSections)
 	if err != nil {
-		return c.JSON(400, MakeError("urev-007", "説明文等"))
+		return c.JSON(400, MakeError("urev-008", "説明文等の登録に失敗しました"))
 	}
 
 	// セクションを加工、Parag内の画像を保存
@@ -308,7 +308,7 @@ func updateReqReview(c echo.Context) error {
 	if err != nil {
 		// 新しく作成した途中の画像ファイルを削除
 		deleteSectionImg(madeSections)
-		return c.JSON(400, MakeError("prev-007", ""))
+		return c.JSON(400, MakeError("urev-009", "セクションの変換に失敗しました"))
 	}
 
 	// 使用しなくなったファイルを強制削除(POSTならば存在しない)
@@ -318,8 +318,8 @@ func updateReqReview(c echo.Context) error {
 	if err != nil {
 		// 新しく作成した途中の画像ファイルを削除
 		deleteSectionImg(madeSections)
-		db.WriteErrorLog(session.UserId, requestIp, "urev-007", "Tierの作成に失敗しました", err.Error())
-		return c.JSON(400, MakeError("urev-007", "Tierの作成に失敗しました"))
+		db.WriteErrorLog(session.UserId, requestIp, "urev-010", "Tierの作成に失敗しました", err.Error())
+		return c.JSON(400, MakeError("urev-010", "Tierの作成に失敗しました"))
 	}
 
 	// 古いほうの画像削除
@@ -379,13 +379,13 @@ func getReqReview(c echo.Context) error {
 	review, tx := db.GetReview(rid, "*")
 	tx.Count(&cnt)
 	if cnt != 1 {
-		return c.JSON(404, MakeError("grev-002", "レビューが存在しません"))
+		return c.JSON(404, MakeError("grev-001", "レビューが存在しません"))
 	}
 
 	user, tx := db.GetUser(review.UserId, "*")
 	tx.Count(&cnt)
 	if cnt != 1 {
-		return c.JSON(404, MakeError("grev-001", "ユーザーが存在しません"))
+		return c.JSON(404, MakeError("grev-002", "ユーザーが存在しません"))
 	}
 
 	tier, tx := db.GetTier(review.TierId, "point_type, factor_params")

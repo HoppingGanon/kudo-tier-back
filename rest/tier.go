@@ -181,7 +181,7 @@ func postReqTier(c echo.Context) error {
 
 	tierId, err := db.CreateTierId(session.UserId)
 	if err != nil {
-		return c.JSON(400, MakeError("ptir-005", "TierIDが生成出来ませんでした しばらく時間を開けて実行してください"))
+		return c.JSON(400, MakeError("ptir-004", "TierIDが生成出来ませんでした しばらく時間を開けて実行してください"))
 	}
 
 	// 画像データの名前を生成
@@ -189,7 +189,7 @@ func postReqTier(c echo.Context) error {
 	var er *ErrorResponse
 	if tierData.ImageIsChanged {
 		// 画像の保存
-		path, er = savePicture(session.UserId, "tier", tierId, "image_", "", tierData.ImageBase64, "ptir-007", tierValidation.imgMaxEdge, tierValidation.imgAspectRate, 80)
+		path, er = savePicture(session.UserId, "tier", tierId, "image_", "", tierData.ImageBase64, "ptir-005", tierValidation.imgMaxEdge, tierValidation.imgAspectRate, 80)
 		if er != nil {
 			return c.JSON(400, er)
 		}
@@ -207,7 +207,7 @@ func postReqTier(c echo.Context) error {
 	if err != nil {
 		// 新しく作成した途中の画像ファイルを削除
 		deleteParagsImg(madeParags)
-		return c.JSON(400, MakeError("utir-008", ""))
+		return c.JSON(400, MakeError("utir-006", ""))
 	}
 
 	err = db.CreateTier(session.UserId, tierId, tierData.Name, path, string(parags), tierData.PointType, string(params3), tierData.PullingUp, tierData.PullingDown)
@@ -216,8 +216,8 @@ func postReqTier(c echo.Context) error {
 	if err != nil {
 		// 新しく作成した途中の画像ファイルを削除
 		deleteParagsImg(madeParags)
-		db.WriteErrorLog(session.UserId, requestIp, "ptir-008", "Tierの作成に失敗しました", err.Error())
-		return c.JSON(400, MakeError("ptir-008", "Tierの作成に失敗しました"))
+		db.WriteErrorLog(session.UserId, requestIp, "ptir-007", "Tierの作成に失敗しました", err.Error())
+		return c.JSON(400, MakeError("ptir-007", "Tierの作成に失敗しました"))
 	}
 
 	db.WriteOperationLog(session.UserId, requestIp, "ptir", tierId)
@@ -277,14 +277,14 @@ func updateReqTier(c echo.Context) error {
 
 	newParamsStr, err := json.Marshal(newParams)
 	if err != nil {
-		return c.JSON(400, MakeError("utir-004", "評価項目の登録に失敗しました"))
+		return c.JSON(400, MakeError("utir-002", "評価項目の登録に失敗しました"))
 	}
 
 	// 画像データの名前を生成
 	path := ""
 	var er *ErrorResponse
 	if tierData.ImageIsChanged {
-		path, er = savePicture(session.UserId, "tier", tid, "icon_", "", tierData.ImageBase64, "utir-006", tierValidation.imgMaxEdge, tierValidation.imgAspectRate, 80)
+		path, er = savePicture(session.UserId, "tier", tid, "icon_", "", tierData.ImageBase64, "utir-003", tierValidation.imgMaxEdge, tierValidation.imgAspectRate, 80)
 		if er != nil {
 			return c.JSON(400, er)
 		}
@@ -295,7 +295,7 @@ func updateReqTier(c echo.Context) error {
 	var orgParags []ParagData
 	err = json.Unmarshal([]byte(orgTier.Parags), &orgParags)
 	if err != nil {
-		return c.JSON(400, MakeError("utir-007", "説明文等"))
+		return c.JSON(400, MakeError("utir-004", "説明文等"))
 	}
 
 	// Paragsを加工、Parag内の画像を保存
@@ -310,7 +310,7 @@ func updateReqTier(c echo.Context) error {
 	if err != nil {
 		// 新しく作成した途中の画像ファイルを削除
 		deleteParagsImg(madeParags)
-		return c.JSON(400, MakeError("utir-008", ""))
+		return c.JSON(400, MakeError("utir-005", ""))
 	}
 
 	// 使用しなくなったファイルを強制削除(POSTならば存在しない)
@@ -376,12 +376,12 @@ func updateReqTier(c echo.Context) error {
 		// 新しく作成した途中の画像ファイルを削除
 		deleteParagsImg(madeParags)
 		// 新しく保存した方の画像削除
-		er = daleteFile("utir-007", path)
+		er = daleteFile("utir-006", path)
 		if er != nil {
 			db.WriteErrorLog(session.UserId, requestIp, er.Code, er.Message, err.Error())
 		}
-		db.WriteErrorLog(session.UserId, requestIp, "utir-008", "Tierの更新に失敗しました", err.Error())
-		return c.JSON(400, MakeError("utir-003", "Tierに紐づくレビューの評価要素の登録に失敗しました"))
+		db.WriteErrorLog(session.UserId, requestIp, "utir-007", "Tierの更新に失敗しました", err.Error())
+		return c.JSON(400, MakeError("utir-007", "Tierに紐づくレビューの評価要素の登録に失敗しました"))
 	}
 
 	// 古いほうの画像削除
@@ -401,13 +401,13 @@ func getReqTier(c echo.Context) error {
 	tier, tx := db.GetTier(tid, "*")
 	tx.Count(&cnt)
 	if cnt != 1 {
-		return c.JSON(404, MakeError("gtir-002", "Tierが存在しません"))
+		return c.JSON(404, MakeError("gtir-001", "Tierが存在しません"))
 	}
 
 	user, tx := db.GetUser(tier.UserId, "*")
 	tx.Count(&cnt)
 	if cnt != 1 {
-		return c.JSON(404, MakeError("gtir-001", "ユーザーが存在しません"))
+		return c.JSON(404, MakeError("gtir-002", "ユーザーが存在しません"))
 	}
 
 	tierData, er := makeTierData(tid, user, tier, "gtir-003")
@@ -417,14 +417,14 @@ func getReqTier(c echo.Context) error {
 
 	reviews, err := db.GetReviews(user.UserId, tid, "", "updatedAtDesc", 1, ReviewMaxInTier, false)
 	if err != nil {
-		return c.JSON(404, MakeError("gtir-003", "Tierに紐づくレビューが取得できませんでした"))
+		return c.JSON(404, MakeError("gtir-004", "Tierに紐づくレビューが取得できませんでした"))
 	}
 
 	reviewDataList := make([]ReviewData, len(reviews))
 	for i, review := range reviews {
 		reviewData, err := makeReviewData(review.ReviewId, user, review, tier.PointType, "")
 		if err != nil {
-			return c.JSON(404, MakeError("gtir-004", "Tierに紐づくレビューが取得できませんでした"))
+			return c.JSON(404, MakeError("gtir-005", "Tierに紐づくレビューが取得できませんでした"))
 		}
 		reviewDataList[i] = reviewData
 	}
@@ -563,7 +563,7 @@ func deleteReqTier(c echo.Context) error {
 	}
 
 	for _, review := range reviews {
-		deleteFolder(tier.UserId, "review", review.ReviewId, "dtir-005", requestIp)
+		deleteFolder(tier.UserId, "review", review.ReviewId, "dtir-003", requestIp)
 	}
 	deleteFolder(tier.UserId, "tier", tier.TierId, "dtir-004", requestIp)
 
