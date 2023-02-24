@@ -98,12 +98,14 @@ func postReqUser(c echo.Context) error {
 	return c.JSON(200, SelfUserData{
 		UserId:           user.UserId,
 		IsSelf:           true,
-		TwitterId:        twitterId,
 		Name:             userData.Name,
 		Profile:          userData.Profile,
 		IconUrl:          path,
 		AllowTwitterLink: false,
 		KeepSession:      3600,
+		TwitterId:        twitterId,
+		TwitterUserName:  session.TwitterUserName,
+		GoogleEmail:      session.GoogleEmail,
 		ReviewsCount:     0,
 		TiersCount:       0,
 	})
@@ -300,7 +302,7 @@ func deleteUser1(c echo.Context) error {
 
 	session.DeleteCodeTime = time.Now()
 
-	delcode := common.Substring(common.GetSHA256(session.SessionID+common.DateToString(session.DeleteCodeTime)), 0, 6)
+	delcode := common.Substring(common.GetSHA256(session.SessionId+common.DateToString(session.DeleteCodeTime)), 0, 6)
 
 	if db.Db.Save(&session).Error != nil {
 		return c.JSON(400, MakeError("dus1-001", "削除コードの発行に失敗しました"))
@@ -329,7 +331,7 @@ func deleteUser2(c echo.Context) error {
 		return c.JSON(403, commonError.userNotEqual)
 	}
 
-	if delcode != common.Substring(common.GetSHA256(session.SessionID+common.DateToString(session.DeleteCodeTime)), 0, 6) {
+	if delcode != common.Substring(common.GetSHA256(session.SessionId+common.DateToString(session.DeleteCodeTime)), 0, 6) {
 		return c.JSON(400, MakeError("dus2-001", "削除コードが一致しません"))
 	} else if session.DeleteCodeTime.Add(time.Duration(60) * time.Second).Before(time.Now()) {
 		return c.JSON(400, MakeError("dus2-002", "削除コードの期限が切れています"))

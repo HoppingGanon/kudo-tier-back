@@ -191,3 +191,27 @@ func IsTierSortType(v string) bool {
 		"createdAtAsc",
 	})
 }
+
+func ValidServiceVersion(service string, version string) (bool, string, int) {
+	if version == "1" {
+		if service == "twitter" {
+			return true, service, 1
+		}
+	} else if version == "2" {
+		if service == "twitter" {
+			return true, service, 2
+		} else if service == "google" {
+			return true, service, 2
+		}
+	}
+	return false, "", 0
+}
+
+func ValidService(service string) (bool, string) {
+	if service == "twitter" {
+		return true, service
+	} else if service == "google" {
+		return true, service
+	}
+	return false, service
+}

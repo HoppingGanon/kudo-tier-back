@@ -21,7 +21,7 @@ type TempSession struct {
 
 // セッション
 type Session struct {
-	SessionID   string    `gorm:"primaryKey;not null"` // セッションID
+	SessionId   string    `gorm:"primaryKey;not null"` // セッションID
 	UserId      string    `gorm:""`                    // ユーザーデータのID
 	ExpiredTime time.Time `gorm:"not null"`            //セッションの有効期限
 
@@ -49,12 +49,12 @@ type Session struct {
 
 // ユーザーデータ
 type User struct {
-	UserId           string `gorm:"primaryKey;not null"`       // ランダムで決定するユーザー固有のID
-	IconUrl          string `gorm:"not null;default:no image"` // TwitterのアイコンURL
-	Name             string `gorm:"not null;default:no name"`  // 登録名
-	Profile          string `gorm:"not null"`                  // 自己紹介文
-	AllowTwitterLink bool   `gorm:"not null;default:false"`    // Twitterへのリンク許可
-	KeepSession      int    `gorm:"not null;default:3600"`     // セッション保持時間(秒)
+	UserId           string `gorm:"primaryKey;not null"`    // ランダムで決定するユーザー固有のID
+	IconUrl          string `gorm:"not null"`               // TwitterのアイコンURL
+	Name             string `gorm:"not null"`               // 登録名
+	Profile          string `gorm:"not null"`               // 自己紹介文
+	AllowTwitterLink bool   `gorm:"not null;default:false"` // Twitterへのリンク許可
+	KeepSession      int    `gorm:"not null;default:3600"`  // セッション保持時間(秒)
 
 	TwitterId       string `gorm:""` // TwitterID(自分自身でのログイン時およびTwitter連携を許可した時のみ開示)
 	TwitterUserName string `gorm:""` // @名
