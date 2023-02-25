@@ -244,3 +244,21 @@ type PostListItem struct {
 	Id   string `json:"id"`
 	Name string `json:"name"`
 }
+
+type Notification struct {
+	Id          uint   `json:"id"`
+	Content     string `json:"content"`
+	IsRead      bool   `json:"isRead"`
+	IsImportant bool   `json:"isImportant"`
+	FromUserId  string `json:"fromUserId"`
+	Url         string `json:"url"`
+	CreatedAt   string `json:"createdAt"`
+}
+
+type CountData struct {
+	Count int64 `json:"count"`
+}
+
+type NotificationReadData struct {
+	IsRead bool `json:"isRead"`
+}

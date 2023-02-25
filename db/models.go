@@ -72,7 +72,7 @@ type OperationLog struct {
 	IpAddress string    `gorm:"not null;default:0.0.0.0"` // セッション確立時のIPアドレス
 	Operation string    `gorm:"not null"`                 // 操作対象(エラーコードに準じる)
 	Content   string    `gorm:"not null"`                 // 操作内容
-	CreatedAt time.Time `gorm:"not null"`                 // 作成日
+	CreatedAt time.Time `gorm:"not null;index"`           // 作成日
 }
 
 // エラーログ
@@ -83,7 +83,7 @@ type ErrorLog struct {
 	ErrorId      string    `gorm:"not null"`                 // エラーID
 	Operation    string    `gorm:"not null"`                 // 操作内容
 	Descriptions string    `gorm:"not null"`                 // 操作内容(詳細)
-	CreatedAt    time.Time `gorm:"not null"`                 // 作成日
+	CreatedAt    time.Time `gorm:"not null;index"`           // 作成日
 }
 
 // Tier
@@ -113,4 +113,27 @@ type Review struct {
 	Sections      string    `gorm:"not null"`            // レビュー説明セクション
 	CreatedAt     time.Time `gorm:""`                    // 作成日
 	UpdatedAt     time.Time `gorm:""`                    // 更新日
+}
+
+type Notification struct {
+	Id          uint      `gorm:"primaryKey"`
+	Content     string    `gorm:""`                       // 表示する文章
+	IsImportant bool      `gorm:"default:false;not null"` // 重要情報フラグ
+	Url         string    `gorm:""`                       // クリックした際に飛ぶURL
+	CreatedAt   time.Time `gorm:"index"`                  // 発信日時
+}
+
+type NotificationRead struct {
+	NotificationId uint   `gorm:"primaryKey"` // NotificationのID
+	UserId         string `gorm:"primaryKey"` // ユーザーID
+	IsRead         bool   `gorm:"not null"`   // 既読フラグ
+}
+
+type NotificationJoinRead struct {
+	Id          uint
+	Content     string
+	IsRead      bool
+	IsImportant bool
+	Url         string
+	CreatedAt   time.Time
 }

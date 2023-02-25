@@ -62,5 +62,7 @@ func migrateDB() {
 		&ErrorLog{},
 		&Tier{},
 		&Review{},
+		&Notification{},
+		&NotificationRead{},
 	)
 }

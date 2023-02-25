@@ -31,4 +31,7 @@ func Route(e *echo.Echo) {
 	e.DELETE("/review/:rid", deleteReviewReq)
 	e.GET("/review-pairs", getReqReviewPairs)
 	e.GET("/latest-post-lists/:uid", getReqLatestPostLists)
+	e.GET("/common/notifications", getNotifications)
+	e.GET("/common/notifications-count", getNotificationsCount)
+	e.PATCH("/common/notification-read/:nid", updateNotificationRead)
 }
