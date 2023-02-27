@@ -14,7 +14,7 @@ import (
 )
 
 // 一度に取得可能なTier/レビュー数
-const postPageSize = 10
+const postPageSize = 5
 
 // レビューの最大登録数
 const ReviewMaxInTier = 255
