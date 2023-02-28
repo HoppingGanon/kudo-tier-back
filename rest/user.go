@@ -360,13 +360,19 @@ func deleteUser2(c echo.Context) error {
 			return tdb.Error
 		}
 
+		// 通知の既読状態削除
+		tdb = tx.Where("user_id = ?", session.UserId).Delete(&db.NotificationRead{})
+		if tdb.Error != nil {
+			return tdb.Error
+		}
+
 		// セッション削除
 		tdb = tx.Where("user_id = ?", session.UserId).Delete(&db.Session{})
 		if tdb.Error != nil {
 			return tdb.Error
 		}
 
-		// 一時セッション削除はUserIdを持っていない
+		// 一時セッションはUserIdを持っていないので何もしない
 
 		// ユーザー削除
 		tdb = tx.Where("user_id = ?", session.UserId).Delete(&db.User{})

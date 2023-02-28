@@ -1,6 +1,10 @@
 package db
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
+	b64 "encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -178,3 +182,142 @@ func ExcludeSelect(baseStruct interface{}, columns ...string) string {
 	}
 	return selectText
 }
+
+// ==========================================================================================
+// 9.6 データを暗号化/復号する
+// https://astaxie.gitbooks.io/build-web-application-with-golang/content/ja/09.6.html
+
+// AESの暗号化・復号化に必要な鍵
+var commonIV = []byte{
+	0xed,
+	0xb1,
+	0xfa,
+	0x64,
+	0x72,
+	0xa4,
+	0x61,
+	0xe0,
+	0x8c,
+	0x9d,
+	0x6c,
+	0x82,
+	0x01,
+	0xa0,
+	0xcc,
+	0x50,
+	/*
+		0x49,
+		0x4b,
+		0xb9,
+		0x9a,
+		0x60,
+		0x5c,
+		0xa6,
+		0x3e,
+		0x4a,
+		0x5d,
+		0xcf,
+		0x1c,
+		0xd7,
+		0x91,
+		0xb9,
+		0x5a,
+	*/
+}
+
+type EncryptedTextData struct {
+	Base64Text string `json:"b"`
+	Length     int    `json:"l"`
+}
+
+func EncryptText(text string, password string) (EncryptedTextData, error) {
+	plaintext := []byte(text)
+
+	// 暗号化アルゴリズムaesを作成
+	c, err := aes.NewCipher([]byte(password))
+	if err != nil {
+		return EncryptedTextData{}, err
+	}
+
+	// 暗号化文字列
+	cfb := cipher.NewCFBEncrypter(c, commonIV)
+	ciphertext := make([]byte, len(plaintext))
+	cfb.XORKeyStream(ciphertext, plaintext)
+	b64Text := b64.StdEncoding.EncodeToString(ciphertext)
+
+	return EncryptedTextData{
+		Base64Text: b64Text,
+		Length:     len(plaintext),
+	}, nil
+}
+
+func DecryptText(etd EncryptedTextData, password string) (string, error) {
+	// 暗号化アルゴリズムaesを作成
+	c, err := aes.NewCipher([]byte(password))
+	if err != nil {
+		return "", err
+	}
+
+	// 暗号化文字列
+	cfbdec := cipher.NewCFBDecrypter(c, commonIV)
+
+	plaintextCopy := make([]byte, etd.Length)
+	ciphertext, err := b64.StdEncoding.DecodeString(etd.Base64Text)
+	if err != nil {
+		return "", err
+	}
+	cfbdec.XORKeyStream(plaintextCopy, ciphertext)
+
+	return string(plaintextCopy), nil
+}
+
+func EncryptTextJson(text string, password string) (string, error) {
+	plaintext := []byte(text)
+
+	// 暗号化アルゴリズムaesを作成
+	c, err := aes.NewCipher([]byte(password))
+	if err != nil {
+		return "{}", err
+	}
+
+	// 暗号化文字列
+	cfb := cipher.NewCFBEncrypter(c, commonIV)
+	ciphertext := make([]byte, len(plaintext))
+	cfb.XORKeyStream(ciphertext, plaintext)
+	b64Text := b64.StdEncoding.EncodeToString(ciphertext)
+
+	bytes, err := json.Marshal(EncryptedTextData{
+		Base64Text: b64Text,
+		Length:     len(plaintext),
+	})
+
+	return string(bytes), err
+}
+
+func DecryptTextJson(jsonText string, password string) (string, error) {
+	var etd EncryptedTextData
+	err := json.Unmarshal([]byte(jsonText), &etd)
+	if err != nil {
+		return "", err
+	}
+
+	// 暗号化アルゴリズムaesを作成
+	c, err := aes.NewCipher([]byte(password))
+	if err != nil {
+		return "", err
+	}
+
+	// 暗号化文字列
+	cfbdec := cipher.NewCFBDecrypter(c, commonIV)
+
+	plaintextCopy := make([]byte, etd.Length)
+	ciphertext, err := b64.StdEncoding.DecodeString(etd.Base64Text)
+	if err != nil {
+		return "", err
+	}
+	cfbdec.XORKeyStream(plaintextCopy, ciphertext)
+
+	return string(plaintextCopy), nil
+}
+
+// ==========================================================================================
