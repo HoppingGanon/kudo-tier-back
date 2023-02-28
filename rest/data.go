@@ -33,7 +33,7 @@ type ClientTempSession struct {
 	Version           string `json:"version"`           // OA1, OA2 OAuth認証バージョン
 	State             string `json:"state"`             // OA2 発行元をチェックするためのstate
 	OAuthToken        string `json:"oAuthToken"`        // OA1 発行済みのトークン
-	OAuthVerifier     string `json:"oAuthVerifier"`     // OA1 TierReviewsバックエンドで検証するコード
+	OAuthVerifier     string `json:"oAuthVerifier"`     // OA1 バックエンドで検証するコード
 }
 
 type Session struct {
