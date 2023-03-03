@@ -48,7 +48,7 @@ type SectionValidation struct {
 var sectionValidation = SectionValidation{
 	sectionTitleLen:   100,
 	paragTextLenMax:   5000,
-	paragsLenMax:      32,
+	paragsLenMax:      64,
 	paragLinkLenMax:   400,
 	paragImgMaxBytes:  10000,
 	paragImgAspect:    -1,
