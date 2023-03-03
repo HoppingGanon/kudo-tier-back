@@ -35,7 +35,7 @@ type SectionValidation struct {
 	paragsLenMax int
 	// リンクの文字数の長さの上限
 	paragLinkLenMax int
-	// リンクの文字数の長さの上限
+	// Parag内の画像として受理する画像の最大サイズ(KB)
 	paragImgMaxBytes int
 	// 画像のアスペクト比
 	paragImgAspect float32
@@ -47,10 +47,10 @@ type SectionValidation struct {
 
 var sectionValidation = SectionValidation{
 	sectionTitleLen:   100,
-	paragTextLenMax:   2000,
-	paragsLenMax:      16,
+	paragTextLenMax:   5000,
+	paragsLenMax:      32,
 	paragLinkLenMax:   400,
-	paragImgMaxBytes:  5000,
+	paragImgMaxBytes:  10000,
 	paragImgAspect:    -1,
 	paragImgMax:       1080,
 	paragImageQuality: 60,
@@ -148,17 +148,18 @@ func validParagraphs(parags []ParagEditingData) (bool, *ErrorResponse) {
 		return false, MakeError("vpgs-002", fmt.Sprintf("説明文/リンクは合計%d個以下にする必要があります", sectionValidation.paragsLenMax))
 	}
 
+	// textとserviceLinkのbodyを合計文字数をカウント
+	sum := 0
+
 	for _, parag := range parags {
 		if !IsParagraphType(parag.Type) {
 			return false, MakeError("vpgs-002", "説明文/リンクのタイプが異常です")
 		} else {
 			if parag.Type == "text" {
-				f, e := validText("説明文", "vpgs-003", parag.Body, false, -1, sectionValidation.paragTextLenMax, "", "")
-				if !f {
-					return false, e
-				}
+				sum += utf8.RuneCountInString(parag.Body)
 			} else if parag.Type == "serviceLink" {
-				f, e := validText("リンク", "vpgs-004", parag.Body, false, -1, sectionValidation.paragLinkLenMax, `^((http)|(https))://.*`, "正しい形式")
+				f, e := validText("リンク", "vpgs-003", parag.Body, false, -1, sectionValidation.paragLinkLenMax, `^((http)|(https))://.*`, "正しい形式")
+				sum += utf8.RuneCountInString(parag.Body)
 				if !f {
 					return false, e
 				}
@@ -166,11 +167,16 @@ func validParagraphs(parags []ParagEditingData) (bool, *ErrorResponse) {
 				// 画像が既定のサイズ以下であることを確認する
 				if parag.IsChanged {
 					if len(parag.Body) > int(sectionValidation.paragImgMaxBytes*1024*8/6) {
-						return false, MakeError("vpgs-005", "画像のサイズが大きすぎます")
+						return false, MakeError("vpgs-004", "画像のサイズが大きすぎます")
 					}
 				}
 			}
 		}
+	}
+
+	if sum > sectionValidation.paragTextLenMax {
+		// 最大文字数
+		return false, MakeError("vpgs-005", fmt.Sprintf("%sは合計%d文字以下で入力する必要があります", "説明文やリンクテキスト", sectionValidation.paragTextLenMax))
 	}
 	return true, nil
 }
