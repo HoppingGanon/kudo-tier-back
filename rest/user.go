@@ -95,7 +95,7 @@ func postReqUser(c echo.Context) error {
 	requestIp := net.ParseIP(c.RealIP()).String()
 	db.WriteOperationLog(user.UserId, requestIp, "pusr", "")
 
-	return c.JSON(200, SelfUserData{
+	return c.JSON(201, SelfUserData{
 		UserId:           user.UserId,
 		IsSelf:           true,
 		Name:             userData.Name,

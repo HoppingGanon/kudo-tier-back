@@ -7,7 +7,6 @@ import (
 )
 
 func Route(e *echo.Echo) {
-	e.GET("/hello", getReqHello)
 	e.GET("/auth/tempsession/:service/:version", getReqTempSession)
 	e.POST("/auth/session/:service/:version", postReqSession)
 	e.PATCH("/auth/service/:service/:version", updateService)

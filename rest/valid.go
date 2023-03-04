@@ -159,7 +159,6 @@ func validParagraphs(parags []ParagEditingData) (bool, *ErrorResponse) {
 				sum += utf8.RuneCountInString(parag.Body)
 			} else if parag.Type == "serviceLink" {
 				f, e := validText("リンク", "vpgs-003", parag.Body, false, -1, sectionValidation.paragLinkLenMax, `^((http)|(https))://.*`, "正しい形式")
-				sum += utf8.RuneCountInString(parag.Body)
 				if !f {
 					return false, e
 				}

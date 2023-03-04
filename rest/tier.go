@@ -39,7 +39,7 @@ var tierValidation = TierValidation{
 	nameLenMax:      100,
 	paramsLenMax:    16,
 	paramNameLenMax: 16,
-	imgMaxBytes:     5000,
+	imgMaxBytes:     10000,
 	imgMaxEdge:      1080,
 	imgAspectRate:   10.0 / 3.0,
 }

@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
@@ -56,6 +57,12 @@ func CheckEnvs() {
 	checkEnv("BACK_TW1_ACCESSSEC")
 	checkEnv("BACK_AP_FILE_PATH")
 	checkEnv("BACK_AP_PORT")
+	// 投稿可能な最小間隔
+	checkEnv("BACK_AP_POST_SPAN")
+	var err error
+	if db.PostSpanMin, err = strconv.Atoi(os.Getenv("BACK_AP_POST_SPAN")); err != nil {
+		panic(fmt.Sprintf("最小投稿間隔が読み込めません: %s", err.Error()))
+	}
 	checkEnv("BACK_GG_CONFJSON")
 }
 

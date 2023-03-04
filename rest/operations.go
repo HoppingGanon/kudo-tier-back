@@ -18,11 +18,6 @@ import (
 
 const saveRetryCount = 3
 
-// テスト用の関数
-func getReqHello(c echo.Context) error {
-	return c.String(http.StatusOK, "{\"Hello\": \"World\"}")
-}
-
 func getUserFile(c echo.Context) error {
 	userId := c.Param("uid")
 	data := c.Param("method")

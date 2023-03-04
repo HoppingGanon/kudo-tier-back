@@ -35,7 +35,7 @@ var reviewValidation = ReviewValidation{
 	titleLenMax:      100,
 	sectionLenMax:    8,
 	factorInfoLenMax: 16,
-	iconMaxBytes:     5000,
+	iconMaxBytes:     10000,
 	iconMaxEdge:      256,
 	iconAspectRate:   1.0,
 }
@@ -328,7 +328,7 @@ func updateReqReview(c echo.Context) error {
 	}
 
 	db.WriteOperationLog(session.UserId, requestIp, "urev", orgReview.ReviewId)
-	return c.String(201, orgReview.ReviewId)
+	return c.String(200, orgReview.ReviewId)
 }
 
 func makeReviewData(rid string, user db.User, review db.Review, pointType string, code string) (ReviewData, *ErrorResponse) {

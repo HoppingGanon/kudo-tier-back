@@ -23,14 +23,14 @@ const TempSessionAlive = 60
 // 一時セッションを削除する間隔(秒)
 const TempSessionDelSpan = 60
 
-// 投稿可能な最小間隔(秒)
-const PostSpanMin = 10
-
 // 各ID作成に失敗した際の最大試行回数
 const retryCreateCnt = 3
 
 // 各IDの桁数
 const idSize = 16
+
+// 最小投稿間隔にの初期値(mainから上書きする)
+var PostSpanMin = 10
 
 func WriteOperationLog(id string, ipAddress string, operation string, content string) {
 	// ログを記録
@@ -81,7 +81,7 @@ func CheckSession(c echo.Context) (Session, error) {
 
 // 最小投稿時間をあけているかチェック
 func CheckLastPost(session Session) bool {
-	return session.LastPostAt.Add(time.Second * PostSpanMin).After(time.Now())
+	return session.LastPostAt.Add(time.Second * time.Duration(PostSpanMin)).After(time.Now())
 }
 
 // 投稿時間を記録
