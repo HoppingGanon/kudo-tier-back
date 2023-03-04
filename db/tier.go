@@ -122,7 +122,7 @@ func GetTiers(userId string, word string, sortType string, page int, pageSize in
 		tx = tx.Where("user_id = ?", userId)
 	} else {
 		// 検索文字列指定有
-		tx = tx.Where("user_id = ?", userId).Where(SearchWord([]string{"name", "parags"}, word))
+		tx = tx.Where("user_id = ?", userId).Where(SearchWord([]string{"name"}, word))
 	}
 	if sortType == "updatedAtDesc" {
 		tx = tx.Order("updated_at desc")

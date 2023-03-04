@@ -35,7 +35,7 @@ func GetReviews(userId string, tierId string, word string, sortType string, page
 
 	if word != "" {
 		// 検索文字列指定有
-		tx = tx.Where(SearchWord([]string{"name", "sections"}, word))
+		tx = tx.Where(SearchWord([]string{"name", "title"}, word))
 	}
 
 	if tierId != "" {
