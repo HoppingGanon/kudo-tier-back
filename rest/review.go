@@ -96,7 +96,7 @@ func validReview(reviewData ReviewEditingData, factorParams []ReviewParamData, p
 	}
 
 	// 画像が既定のサイズ以下であることを確認する
-	if reviewData.IconBase64 != "nochange" {
+	if reviewData.IconIsChanged {
 		if len(reviewData.IconBase64) > int(reviewValidation.iconMaxBytes*1024*8/6) {
 			return false, MakeError("vrev-009", "画像のサイズが大きすぎます")
 		}
@@ -107,7 +107,7 @@ func validReview(reviewData ReviewEditingData, factorParams []ReviewParamData, p
 
 func postReqReview(c echo.Context) error {
 	// セッションの存在チェック
-	session, err := db.CheckSession(c)
+	session, err := db.CheckSession(c, true)
 	if err != nil {
 		return c.JSON(403, commonError.noSession)
 	}
@@ -168,7 +168,7 @@ func postReqReview(c echo.Context) error {
 
 	factors, err := json.Marshal(reviewData.ReviewFactors)
 	if err != nil {
-		return c.JSON(400, MakeError("prev-006", ""))
+		return c.JSON(400, MakeError("prev-006", "レビューの評価情報が不正です"))
 	}
 
 	// 画像データを保存
@@ -218,7 +218,7 @@ func updateReqReview(c echo.Context) error {
 	rid := c.Param("rid")
 
 	// セッションの存在チェック
-	session, err := db.CheckSession(c)
+	session, err := db.CheckSession(c, true)
 	if err != nil {
 		return c.JSON(403, commonError.noSession)
 	}
@@ -490,7 +490,7 @@ func deleteReviewReq(c echo.Context) error {
 	rid := c.Param("rid")
 
 	// セッションの存在チェック
-	session, err := db.CheckSession(c)
+	session, err := db.CheckSession(c, true)
 	if err != nil {
 		return c.JSON(403, commonError.noSession)
 	}

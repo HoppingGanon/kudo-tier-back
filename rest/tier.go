@@ -90,9 +90,13 @@ func validTier(tierData TierEditingData) (bool, *ErrorResponse) {
 		}
 	}
 
+	if len(tierData.ReviewFactorParams) > tierValidation.paramsLenMax {
+		return false, MakeError("vtir-008", fmt.Sprintf("ポイントの評価項目は最大で%d個までです", tierValidation.paramsLenMax))
+	}
+
 	for _, v := range tierData.ReviewFactorParams {
 		// 評価項目名の文字数チェック
-		f, er = validText("評価項目名", "vtir-008", v.Name, true, -1, tierValidation.paramsLenMax, "", "")
+		f, er = validText("評価項目名", "vtir-009", v.Name, true, -1, tierValidation.paramsLenMax, "", "")
 		if !f {
 			return f, er
 		}
@@ -101,19 +105,19 @@ func validTier(tierData TierEditingData) (bool, *ErrorResponse) {
 	for _, v := range tierData.ReviewFactorParams {
 		// 評価項目の重み範囲チェック
 		if v.IsPoint {
-			f, er = validInteger("評価項目名", "vtir-009", v.Weight, 0, 100)
+			f, er = validInteger("評価項目名", "vtir-010", v.Weight, 0, 100)
 			if !f {
 				return f, er
 			}
 		}
 	}
 
-	f, er = validInteger("Tier上寄せ調整値", "vtir-010", tierData.PullingUp, 0, 40)
+	f, er = validInteger("Tier上寄せ調整値", "vtir-011", tierData.PullingUp, 0, 40)
 	if !f {
 		return f, er
 	}
 
-	f, er = validInteger("Tier下寄せ調整値", "vtir-011", tierData.PullingDown, 0, 40)
+	f, er = validInteger("Tier下寄せ調整値", "vtir-012", tierData.PullingDown, 0, 40)
 	if !f {
 		return f, er
 	}
@@ -135,7 +139,7 @@ func removeParamIndex(params []ReviewParamData) []ReviewParam {
 
 func postReqTier(c echo.Context) error {
 	// セッションの存在チェック
-	session, err := db.CheckSession(c)
+	session, err := db.CheckSession(c, true)
 	if err != nil {
 		return c.JSON(403, commonError.noSession)
 	}
@@ -228,7 +232,7 @@ func updateReqTier(c echo.Context) error {
 	tid := c.Param("tid")
 
 	// セッションの存在チェック
-	session, err := db.CheckSession(c)
+	session, err := db.CheckSession(c, true)
 	if err != nil {
 		return c.JSON(403, commonError.noSession)
 	}
@@ -522,7 +526,7 @@ func deleteReqTier(c echo.Context) error {
 	tid := c.Param("tid")
 
 	// セッションの存在チェック
-	session, err := db.CheckSession(c)
+	session, err := db.CheckSession(c, true)
 	if err != nil {
 		return c.JSON(403, commonError.noSession)
 	}
@@ -531,16 +535,16 @@ func deleteReqTier(c echo.Context) error {
 
 	tier, tx := db.GetTier(tid, "tier_id, user_id")
 
-	// 編集ユーザーとTier所有ユーザーチェック
-	if session.UserId != tier.UserId {
-		return c.JSON(403, commonError.userNotEqual)
-	}
-
 	var cnt int64
 	tx.Count(&cnt)
 
 	if cnt != 1 {
 		return c.JSON(400, MakeError("dtir-001", "対象のTierがありません"))
+	}
+
+	// 編集ユーザーとTier所有ユーザーチェック
+	if session.UserId != tier.UserId {
+		return c.JSON(403, commonError.userNotEqual)
 	}
 
 	var reviews []db.Review

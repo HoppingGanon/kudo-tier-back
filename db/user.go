@@ -2,6 +2,7 @@ package db
 
 import (
 	"errors"
+	"fmt"
 
 	common "reviewmakerback/common"
 
@@ -38,7 +39,7 @@ func ExistsUserGId(gid string) (bool, User) {
 	return cnt > 0, user
 }
 
-func CreateUser(service string, name string, profile string, iconUrl string, twitterId string, twitterUserName string, googleId string, googleEmail string) (User, error) {
+func CreateUser(service string, name string, profile string, iconUrl string, twitterId string, twitterUserName string, googleId string, googleEmail string, requestIp string) (User, error) {
 	var id string
 	var err error
 	if service == "twitter" {
@@ -73,7 +74,8 @@ func CreateUser(service string, name string, profile string, iconUrl string, twi
 			tx := Db.Create(&user)
 
 			if tx.Error != nil {
-				return User{}, tx.Error
+				WriteErrorLog("", requestIp, "pusr-005", "ユーザーの作成に失敗しました", fmt.Sprintf("使用したID(%s) %s", id, tx.Error.Error()))
+				return User{}, errors.New("ユーザー作成に失敗しました")
 			}
 			return user, nil
 		}

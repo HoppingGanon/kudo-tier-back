@@ -22,7 +22,7 @@ const latestPostMax = 100
 // ユーザー作成のためのPOSTリクエストの処理
 func postReqUser(c echo.Context) error {
 	// セッションの存在チェック
-	session, err := db.CheckSession(c)
+	session, err := db.CheckSession(c, false)
 	if err != nil {
 		return c.JSON(403, commonError.noSession)
 	}
@@ -51,6 +51,9 @@ func postReqUser(c echo.Context) error {
 	if !f {
 		return c.JSON(400, er)
 	}
+	if len(userData.IconBase64) > int(userValidation.iconMaxBytes*1024*8/6) {
+		return c.JSON(400, MakeError("pusr-004", "画像のサイズが大きすぎます"))
+	}
 
 	var twitterId string
 	var googleId string
@@ -62,6 +65,7 @@ func postReqUser(c echo.Context) error {
 	}
 
 	// アイコンはとりあえず設定しない
+	requestIp := net.ParseIP(c.RealIP()).String()
 	user, err := db.CreateUser(
 		session.LoginService,
 		userData.Name,
@@ -71,11 +75,10 @@ func postReqUser(c echo.Context) error {
 		session.TwitterUserName,
 		googleId,
 		session.GoogleEmail,
+		requestIp,
 	)
 	if err != nil {
-		requestIp := net.ParseIP(c.RealIP()).String()
-		db.WriteErrorLog(session.UserId, requestIp, "pusr-004", "ユーザーの作成に失敗しました", err.Error())
-		return c.JSON(400, MakeError("pusr-004", "ユーザーの作成に失敗しました"))
+		return c.JSON(400, MakeError("pusr-005", err.Error()))
 	}
 
 	session.UserId = user.UserId
@@ -84,15 +87,19 @@ func postReqUser(c echo.Context) error {
 	}
 
 	// 画像の保存
-	path, er := savePicture(user.UserId, "user", "user", "icon_", "", userData.IconBase64, "prev-005", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
-	if er != nil {
-		return c.JSON(400, er)
+	path := ""
+	if userData.IconBase64 != "" {
+		path, er = savePicture(user.UserId, "user", "user", "icon_", "", userData.IconBase64, "pusr-006", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
+		if er != nil {
+			// トランザクションを使用できないので、保存に失敗したらユーザーを削除する
+			db.Db.Where("user_id = ?", user.UserId).Delete(&db.User{})
+			return c.JSON(400, er)
+		}
 	}
 
 	// 後からアイコンを変更する
 	db.UpdateUser(user, userData.Name, userData.Profile, path, true, false, 3600)
 
-	requestIp := net.ParseIP(c.RealIP()).String()
 	db.WriteOperationLog(user.UserId, requestIp, "pusr", "")
 
 	return c.JSON(201, SelfUserData{
@@ -114,7 +121,7 @@ func postReqUser(c echo.Context) error {
 // ユーザーデータの更新のためのUPDATEリクエストの処理
 func updateReqUser(c echo.Context) error {
 	// セッションの存在チェック
-	session, err := db.CheckSession(c)
+	session, err := db.CheckSession(c, true)
 	if err != nil {
 		return c.JSON(403, commonError.noSession)
 	}
@@ -146,6 +153,11 @@ func updateReqUser(c echo.Context) error {
 	f, er = validText("プロフィール", "uusr-002", userData.Profile, false, 0, userValidation.profileLenMax, "", "")
 	if !f {
 		return c.JSON(400, er)
+	}
+	if userData.IconIsChanged {
+		if len(userData.IconBase64) > int(userValidation.iconMaxBytes*1024*8/6) {
+			return c.JSON(400, MakeError("pusr-004", "画像のサイズが大きすぎます"))
+		}
 	}
 	f, er = validInteger("セッション保持時間", "uusr-003", userData.KeepSession, 10, 1440)
 	if !f {
@@ -183,7 +195,7 @@ func updateReqUser(c echo.Context) error {
 // ユーザーデータを取得するGETリクエストの処理
 func getReqUserData(c echo.Context) error {
 	// 送信元ユーザーと参照先ユーザーが同じかどうかチェック
-	session, err := db.CheckSession(c)
+	session, err := db.CheckSession(c, true)
 
 	existsSession := err == nil
 
@@ -290,7 +302,7 @@ func deleteUser1(c echo.Context) error {
 	uid := c.Param("uid")
 
 	// セッションの存在チェック
-	session, err := db.CheckSession(c)
+	session, err := db.CheckSession(c, true)
 	if err != nil {
 		return c.JSON(403, commonError.noSession)
 	}
@@ -321,7 +333,7 @@ func deleteUser2(c echo.Context) error {
 	requestIp := net.ParseIP(c.RealIP()).String()
 
 	// セッションの存在チェック
-	session, err := db.CheckSession(c)
+	session, err := db.CheckSession(c, true)
 	if err != nil {
 		return c.JSON(403, commonError.noSession)
 	}

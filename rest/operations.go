@@ -75,6 +75,12 @@ func deleteFolder(userId string, data string, id string, errorCode string, ipAdd
 // aspectRate 負数を指定するとアスペクト比を設定しない
 func savePicture(userId string, data string, id string, fname string, delpath string, imageBase64 string, errorCode string, imgMaxEdge int, aspectRate float32, quality int) (string, *ErrorResponse) {
 	path := ""
+
+	// フールプルーフ
+	if userId == "" || data == "" || id == "" || fname == "" {
+		return path, MakeError(errorCode+"-001", "ファイルを保存するのに必要な情報が不足しています 管理者に連絡してください")
+	}
+
 	// Base64文字列をバイト列に変換する
 	if imageBase64 == "" {
 		// ファイル削除
@@ -85,37 +91,37 @@ func savePicture(userId string, data string, id string, fname string, delpath st
 	} else {
 		byteAry, err := b64.StdEncoding.DecodeString(imageBase64)
 		if err != nil {
-			return path, MakeError(errorCode+"-001", "画像の登録に失敗しました")
+			return path, MakeError(errorCode+"-002", "画像の登録に失敗しました")
 		}
 
 		// バイト列をReaderに変換
 		r := bytes.NewReader(byteAry)
 		img, _, err := image.Decode(r)
 		if err != nil {
-			return path, MakeError(errorCode+"-002", "画像の登録に失敗しました")
+			return path, MakeError(errorCode+"-003", "画像の登録に失敗しました")
 		}
 
 		x := img.Bounds().Dx()
 		y := img.Bounds().Dy()
 
 		// (画像のアスペクト比 / 既定のアスペクト比) がプラスマイナスaspectRateAmpになってるか確認
-		if aspectRate < 0 {
+		if aspectRate > 0 {
 			if ((float32(x)/float32(y))/aspectRate)-(1.0-aspectRateAmp) > aspectRateAmp*2 {
-				return path, MakeError(errorCode+"-003", "画像のアスペクト比が異常です")
+				return path, MakeError(errorCode+"-004", "画像のアスペクト比が異常です")
 			}
 		}
 
 		resizedImg := resize.Thumbnail(uint(imgMaxEdge), uint(imgMaxEdge), img, resize.NearestNeighbor)
 		err = os.MkdirAll(fmt.Sprintf("%s/%s/%s/%s", os.Getenv("BACK_AP_FILE_PATH"), userId, data, id), os.ModePerm)
 		if err != nil {
-			return path, MakeError(errorCode+"-004", "画像の登録に失敗しました")
+			return path, MakeError(errorCode+"-005", "画像の登録に失敗しました")
 		}
 
 	lo:
 		for i := 0; i < saveRetryCount; i++ {
 			code, err := common.MakeRandomChars(16, fmt.Sprintf("%s%s_%d", userId, id, i))
 			if err != nil {
-				return "", MakeError(errorCode+"-005", "画像の登録に失敗しました しばらく時間を空けてもう一度実行してください")
+				return "", MakeError(errorCode+"-006", "画像の登録に失敗しました しばらく時間を空けてもう一度実行してください")
 			}
 			path = fmt.Sprintf("%s/%s/%s/%s/%s%s.jpg", os.Getenv("BACK_AP_FILE_PATH"), userId, data, id, fname, code)
 
@@ -124,7 +130,7 @@ func savePicture(userId string, data string, id string, fname string, delpath st
 				break lo
 			} else if i == saveRetryCount-1 {
 				// リトライ上限に到達
-				return "", MakeError(errorCode+"-006", "画像の登録に失敗しました しばらく時間を空けてもう一度実行してください")
+				return "", MakeError(errorCode+"-007", "画像の登録に失敗しました しばらく時間を空けてもう一度実行してください")
 			}
 		}
 
@@ -133,7 +139,7 @@ func savePicture(userId string, data string, id string, fname string, delpath st
 			if out != nil {
 				out.Close()
 			}
-			return "", MakeError(errorCode+"-007", "画像の登録に失敗しました")
+			return "", MakeError(errorCode+"-008", "画像の登録に失敗しました")
 		}
 
 		opts := &jpeg.Options{
@@ -151,7 +157,7 @@ func savePicture(userId string, data string, id string, fname string, delpath st
 		out.Close()
 
 		if err != nil {
-			return path, MakeError(errorCode+"-008", "画像の登録に失敗しました")
+			return path, MakeError(errorCode+"-009", "画像の登録に失敗しました")
 		}
 	}
 	return path, nil

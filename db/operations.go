@@ -61,7 +61,7 @@ func WriteErrorLog(id string, ipAddress string, errorId string, operation string
 	Db.Create(log)
 }
 
-func CheckSession(c echo.Context) (Session, error) {
+func CheckSession(c echo.Context, requireUser bool) (Session, error) {
 	token := c.Request().Header.Get("Authorization")
 	typeStr := common.Substring(token, 0, 7)
 
@@ -73,10 +73,18 @@ func CheckSession(c echo.Context) (Session, error) {
 	var session Session
 	var cnt int64
 	Db.Where("session_id = ?", sessionId).Find(&session).Count(&cnt)
-	if cnt == 1 {
-		return session, nil
+	if cnt != 1 {
+		return Session{}, errors.New("セッションがありません")
 	}
-	return Session{}, errors.New("セッションがありません")
+
+	if requireUser {
+		Db.Model(&User{}).Where("user_id = ?", session.UserId).Count(&cnt)
+		if cnt != 1 {
+			return Session{}, errors.New("ユーザーが存在しません")
+		}
+	}
+
+	return session, nil
 }
 
 // 最小投稿時間をあけているかチェック

@@ -19,11 +19,14 @@ type UserValidation struct {
 	nameLenMax int
 	// プロフィールの最大文字数
 	profileLenMax int
+	// プロフィールアイコンの最大サイズ(KB)
+	iconMaxBytes int
 }
 
 var userValidation = UserValidation{
 	nameLenMax:    50,
 	profileLenMax: 400,
+	iconMaxBytes:  10000,
 }
 
 type SectionValidation struct {
