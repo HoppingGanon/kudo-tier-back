@@ -56,8 +56,6 @@ func validTier(tierData TierEditingData) (bool, *ErrorResponse) {
 	// Paragsのチェック
 	if tierData.Parags == nil {
 		return false, MakeError("vtir-002", "説明文等がNULLです")
-	} else if len(tierData.Parags) > sectionValidation.paragsLenMax {
-		return false, MakeError("vtir-003", fmt.Sprintf("説明文等の合計数が最大の%d個を超えています", sectionValidation.paragsLenMax))
 	}
 
 	f, er = validParagraphs(tierData.Parags)
