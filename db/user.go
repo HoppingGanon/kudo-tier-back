@@ -65,7 +65,7 @@ func CreateUser(service string, name string, profile string, iconUrl string, twi
 				Profile:          profile,
 				IconUrl:          iconUrl,
 				AllowTwitterLink: false,
-				KeepSession:      3600,
+				KeepSession:      7200,
 				TwitterId:        twitterId,
 				TwitterUserName:  twitterUserName,
 				GoogleId:         googleId,

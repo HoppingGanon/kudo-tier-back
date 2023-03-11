@@ -98,7 +98,7 @@ func postReqUser(c echo.Context) error {
 	}
 
 	// 後からアイコンを変更する
-	db.UpdateUser(user, userData.Name, userData.Profile, path, true, false, 3600)
+	db.UpdateUser(user, userData.Name, userData.Profile, path, true, false, 7200)
 
 	db.WriteOperationLog(user.UserId, requestIp, "pusr", "")
 
@@ -109,7 +109,7 @@ func postReqUser(c echo.Context) error {
 		Profile:          userData.Profile,
 		IconUrl:          path,
 		AllowTwitterLink: false,
-		KeepSession:      3600,
+		KeepSession:      7200,
 		TwitterId:        twitterId,
 		TwitterUserName:  session.TwitterUserName,
 		GoogleEmail:      session.GoogleEmail,
