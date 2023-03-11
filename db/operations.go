@@ -61,7 +61,7 @@ func WriteErrorLog(id string, ipAddress string, errorId string, operation string
 	Db.Create(log)
 }
 
-func CheckSession(c echo.Context, requireUser bool) (Session, error) {
+func CheckSession(c echo.Context, requireUser bool, updateExpiredTime bool) (Session, error) {
 	token := c.Request().Header.Get("Authorization")
 	typeStr := common.Substring(token, 0, 7)
 
@@ -72,16 +72,26 @@ func CheckSession(c echo.Context, requireUser bool) (Session, error) {
 
 	var session Session
 	var cnt int64
-	Db.Where("session_id = ?", sessionId).Find(&session).Count(&cnt)
+	tx := Db.Where("session_id = ?", sessionId)
+
+	tx.Find(&session).Count(&cnt)
 	if cnt != 1 {
 		return Session{}, errors.New("セッションがありません")
 	}
 
+	var user User
 	if requireUser {
-		Db.Model(&User{}).Where("user_id = ?", session.UserId).Count(&cnt)
+		Db.Where("user_id = ?", session.UserId).Find(&user).Count(&cnt)
 		if cnt != 1 {
 			return Session{}, errors.New("ユーザーが存在しません")
 		}
+	}
+
+	if updateExpiredTime {
+		fmt.Println(user.KeepSession)
+		exTime := time.Now().Add(time.Duration(user.KeepSession) * time.Second)
+		tx.Update("expired_time", exTime)
+		session.ExpiredTime = exTime
 	}
 
 	return session, nil

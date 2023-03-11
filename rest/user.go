@@ -22,7 +22,7 @@ const latestPostMax = 100
 // ユーザー作成のためのPOSTリクエストの処理
 func postReqUser(c echo.Context) error {
 	// セッションの存在チェック
-	session, err := db.CheckSession(c, false)
+	session, err := db.CheckSession(c, false, false)
 	if err != nil {
 		return c.JSON(403, commonError.noSession)
 	}
@@ -121,7 +121,7 @@ func postReqUser(c echo.Context) error {
 // ユーザーデータの更新のためのUPDATEリクエストの処理
 func updateReqUser(c echo.Context) error {
 	// セッションの存在チェック
-	session, err := db.CheckSession(c, true)
+	session, err := db.CheckSession(c, true, false)
 	if err != nil {
 		return c.JSON(403, commonError.noSession)
 	}
@@ -195,7 +195,7 @@ func updateReqUser(c echo.Context) error {
 // ユーザーデータを取得するGETリクエストの処理
 func getReqUserData(c echo.Context) error {
 	// 送信元ユーザーと参照先ユーザーが同じかどうかチェック
-	session, err := db.CheckSession(c, true)
+	session, err := db.CheckSession(c, true, false)
 
 	existsSession := err == nil
 
@@ -302,7 +302,7 @@ func deleteUser1(c echo.Context) error {
 	uid := c.Param("uid")
 
 	// セッションの存在チェック
-	session, err := db.CheckSession(c, true)
+	session, err := db.CheckSession(c, true, false)
 	if err != nil {
 		return c.JSON(403, commonError.noSession)
 	}
@@ -333,7 +333,7 @@ func deleteUser2(c echo.Context) error {
 	requestIp := net.ParseIP(c.RealIP()).String()
 
 	// セッションの存在チェック
-	session, err := db.CheckSession(c, true)
+	session, err := db.CheckSession(c, true, false)
 	if err != nil {
 		return c.JSON(403, commonError.noSession)
 	}

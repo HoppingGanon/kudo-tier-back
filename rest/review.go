@@ -107,7 +107,7 @@ func validReview(reviewData ReviewEditingData, factorParams []ReviewParamData, p
 
 func postReqReview(c echo.Context) error {
 	// セッションの存在チェック
-	session, err := db.CheckSession(c, true)
+	session, err := db.CheckSession(c, true, false)
 	if err != nil {
 		return c.JSON(403, commonError.noSession)
 	}
@@ -218,7 +218,7 @@ func updateReqReview(c echo.Context) error {
 	rid := c.Param("rid")
 
 	// セッションの存在チェック
-	session, err := db.CheckSession(c, true)
+	session, err := db.CheckSession(c, true, false)
 	if err != nil {
 		return c.JSON(403, commonError.noSession)
 	}
@@ -490,7 +490,7 @@ func deleteReviewReq(c echo.Context) error {
 	rid := c.Param("rid")
 
 	// セッションの存在チェック
-	session, err := db.CheckSession(c, true)
+	session, err := db.CheckSession(c, true, false)
 	if err != nil {
 		return c.JSON(403, commonError.noSession)
 	}

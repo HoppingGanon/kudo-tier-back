@@ -137,7 +137,7 @@ func removeParamIndex(params []ReviewParamData) []ReviewParam {
 
 func postReqTier(c echo.Context) error {
 	// セッションの存在チェック
-	session, err := db.CheckSession(c, true)
+	session, err := db.CheckSession(c, true, false)
 	if err != nil {
 		return c.JSON(403, commonError.noSession)
 	}
@@ -230,7 +230,7 @@ func updateReqTier(c echo.Context) error {
 	tid := c.Param("tid")
 
 	// セッションの存在チェック
-	session, err := db.CheckSession(c, true)
+	session, err := db.CheckSession(c, true, false)
 	if err != nil {
 		return c.JSON(403, commonError.noSession)
 	}
@@ -524,7 +524,7 @@ func deleteReqTier(c echo.Context) error {
 	tid := c.Param("tid")
 
 	// セッションの存在チェック
-	session, err := db.CheckSession(c, true)
+	session, err := db.CheckSession(c, true, false)
 	if err != nil {
 		return c.JSON(403, commonError.noSession)
 	}

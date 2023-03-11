@@ -16,7 +16,7 @@ const notificationsLimit = 100
 func getNotifications(c echo.Context) error {
 
 	// セッションの存在チェック
-	session, err := db.CheckSession(c, true)
+	session, err := db.CheckSession(c, true, false)
 	if err != nil {
 		return c.JSON(403, commonError.noSession)
 	}
@@ -44,7 +44,7 @@ func getNotifications(c echo.Context) error {
 func getNotificationsCount(c echo.Context) error {
 
 	// セッションの存在チェック
-	session, err := db.CheckSession(c, true)
+	session, err := db.CheckSession(c, true, false)
 	if err != nil {
 		return c.JSON(403, commonError.noSession)
 	}
@@ -61,7 +61,7 @@ func getNotificationsCount(c echo.Context) error {
 
 func updateNotificationRead(c echo.Context) error {
 	// セッションの存在チェック
-	session, err := db.CheckSession(c, true)
+	session, err := db.CheckSession(c, true, false)
 	if err != nil {
 		return c.JSON(403, commonError.noSession)
 	}
