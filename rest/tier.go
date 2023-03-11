@@ -378,7 +378,7 @@ func updateReqTier(c echo.Context) error {
 		// 新しく作成した途中の画像ファイルを削除
 		deleteParagsImg(madeParags)
 		// 新しく保存した方の画像削除
-		er = daleteFile("utir-006", path)
+		er = deleteFile("utir-006", path)
 		if er != nil {
 			db.WriteErrorLog(session.UserId, requestIp, er.Code, er.Message, err.Error())
 		}
@@ -388,7 +388,7 @@ func updateReqTier(c echo.Context) error {
 
 	// 古いほうの画像削除
 	if tierData.ImageIsChanged {
-		daleteFile("", orgTier.ImageUrl)
+		deleteFile("", orgTier.ImageUrl)
 	}
 
 	db.WriteOperationLog(session.UserId, requestIp, "utir", tid)

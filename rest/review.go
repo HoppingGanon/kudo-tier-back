@@ -324,7 +324,7 @@ func updateReqReview(c echo.Context) error {
 
 	// 古いほうの画像削除
 	if reviewData.IconIsChanged {
-		daleteFile("", orgReview.IconUrl)
+		deleteFile("", orgReview.IconUrl)
 	}
 
 	db.WriteOperationLog(session.UserId, requestIp, "urev", orgReview.ReviewId)

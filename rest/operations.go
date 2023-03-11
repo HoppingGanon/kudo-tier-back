@@ -47,13 +47,14 @@ func getUserFile(c echo.Context) error {
 	return c.File(path)
 }
 
-func daleteFile(errorCode string, delpath string) *ErrorResponse {
+func deleteFile(errorCode string, delpath string) *ErrorResponse {
 	// ファイル削除
 	if delpath != "" {
-		_, err := os.Stat(delpath)
+		fullpath := os.Getenv("BACK_AP_FILE_PATH") + "/" + delpath
+		_, err := os.Stat(fullpath)
 		if err == nil {
 			// ファイルが存在した場合
-			err = os.Remove(delpath)
+			err = os.Remove(fullpath)
 			if err != nil {
 				// エラーコードはsavePicと重複
 				return MakeError(errorCode+"-01", "画像の削除に失敗しました")
@@ -74,31 +75,33 @@ func deleteFolder(userId string, data string, id string, errorCode string, ipAdd
 // delpath 省略可能
 // aspectRate 負数を指定するとアスペクト比を設定しない
 func savePicture(userId string, data string, id string, fname string, delpath string, imageBase64 string, errorCode string, imgMaxEdge int, aspectRate float32, quality int) (string, *ErrorResponse) {
-	path := ""
+	fullpath := ""
+	// データベースに保存するパス
+	dbpath := ""
 
 	// フールプルーフ
 	if userId == "" || data == "" || id == "" || fname == "" {
-		return path, MakeError(errorCode+"-001", "ファイルを保存するのに必要な情報が不足しています 管理者に連絡してください")
+		return fullpath, MakeError(errorCode+"-001", "ファイルを保存するのに必要な情報が不足しています 管理者に連絡してください")
 	}
 
 	// Base64文字列をバイト列に変換する
 	if imageBase64 == "" {
 		// ファイル削除
-		er := daleteFile(errorCode, delpath)
+		er := deleteFile(errorCode, delpath)
 		if er != nil {
-			return path, er
+			return fullpath, er
 		}
 	} else {
 		byteAry, err := b64.StdEncoding.DecodeString(imageBase64)
 		if err != nil {
-			return path, MakeError(errorCode+"-002", "画像の登録に失敗しました")
+			return fullpath, MakeError(errorCode+"-002", "画像の登録に失敗しました")
 		}
 
 		// バイト列をReaderに変換
 		r := bytes.NewReader(byteAry)
 		img, _, err := image.Decode(r)
 		if err != nil {
-			return path, MakeError(errorCode+"-003", "画像の登録に失敗しました")
+			return fullpath, MakeError(errorCode+"-003", "画像の登録に失敗しました")
 		}
 
 		x := img.Bounds().Dx()
@@ -107,14 +110,14 @@ func savePicture(userId string, data string, id string, fname string, delpath st
 		// (画像のアスペクト比 / 既定のアスペクト比) がプラスマイナスaspectRateAmpになってるか確認
 		if aspectRate > 0 {
 			if ((float32(x)/float32(y))/aspectRate)-(1.0-aspectRateAmp) > aspectRateAmp*2 {
-				return path, MakeError(errorCode+"-004", "画像のアスペクト比が異常です")
+				return fullpath, MakeError(errorCode+"-004", "画像のアスペクト比が異常です")
 			}
 		}
 
 		resizedImg := resize.Thumbnail(uint(imgMaxEdge), uint(imgMaxEdge), img, resize.NearestNeighbor)
 		err = os.MkdirAll(fmt.Sprintf("%s/%s/%s/%s", os.Getenv("BACK_AP_FILE_PATH"), userId, data, id), os.ModePerm)
 		if err != nil {
-			return path, MakeError(errorCode+"-005", "画像の登録に失敗しました")
+			return fullpath, MakeError(errorCode+"-005", "画像の登録に失敗しました")
 		}
 
 	lo:
@@ -123,9 +126,10 @@ func savePicture(userId string, data string, id string, fname string, delpath st
 			if err != nil {
 				return "", MakeError(errorCode+"-006", "画像の登録に失敗しました しばらく時間を空けてもう一度実行してください")
 			}
-			path = fmt.Sprintf("%s/%s/%s/%s/%s%s.jpg", os.Getenv("BACK_AP_FILE_PATH"), userId, data, id, fname, code)
+			fullpath = fmt.Sprintf("%s/%s/%s/%s/%s%s.jpg", os.Getenv("BACK_AP_FILE_PATH"), userId, data, id, fname, code)
+			dbpath = fmt.Sprintf("%s/%s/%s/%s%s.jpg", userId, data, id, fname, code)
 
-			_, err = os.Stat(path)
+			_, err = os.Stat(fullpath)
 			if os.IsNotExist(err) {
 				break lo
 			} else if i == saveRetryCount-1 {
@@ -134,7 +138,7 @@ func savePicture(userId string, data string, id string, fname string, delpath st
 			}
 		}
 
-		out, err := os.Create(path)
+		out, err := os.Create(fullpath)
 		if err != nil {
 			if out != nil {
 				out.Close()
@@ -147,20 +151,20 @@ func savePicture(userId string, data string, id string, fname string, delpath st
 		}
 
 		// ファイル削除
-		er := daleteFile(errorCode, delpath)
+		er := deleteFile(errorCode, delpath)
 		if er != nil {
 			out.Close()
-			return path, er
+			return fullpath, er
 		}
 
 		err = jpeg.Encode(out, resizedImg, opts)
 		out.Close()
 
 		if err != nil {
-			return path, MakeError(errorCode+"-009", "画像の登録に失敗しました")
+			return dbpath, MakeError(errorCode+"-009", "画像の登録に失敗しました")
 		}
 	}
-	return path, nil
+	return dbpath, nil
 }
 
 // セクション配列から画像のパスをマップ化したものを取得
@@ -250,7 +254,7 @@ func createSections(sections []SectionEditingData, oldImageMap map[string]bool, 
 
 func deleteParagsImg(parags []ParagData) {
 	for _, parag := range parags {
-		daleteFile("", parag.Body)
+		deleteFile("", parag.Body)
 	}
 }
 
@@ -263,7 +267,7 @@ func deleteSectionImg(sections []SectionData) {
 func deleteImageMap(oldImageMap map[string]bool) {
 	for path, f := range oldImageMap {
 		if !f {
-			daleteFile("", path)
+			deleteFile("", path)
 		}
 	}
 }
