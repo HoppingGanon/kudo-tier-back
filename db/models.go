@@ -98,13 +98,13 @@ type Tier struct {
 	PullingUp    int       `gorm:"not null"`            // Tier表を上に引き上げる
 	PullingDown  int       `gorm:"not null"`            // Tier表を下に引き下げる
 	CreatedAt    time.Time `gorm:""`                    // 作成日
-	UpdatedAt    time.Time `gorm:""`                    // 更新日
+	UpdatedAt    time.Time `gorm:"index"`               // 更新日
 }
 
 // Review
 type Review struct {
 	ReviewId      string    `gorm:"primaryKey;not null"` // レビュー固有のID
-	UserId        string    `gorm:"not null"`            // 作成ユーザーの固有ID
+	UserId        string    `gorm:"not null;index"`      // 作成ユーザーの固有ID
 	TierId        string    `gorm:"not null"`            // 作成元Tierの固有ID
 	Title         string    `gorm:"not null"`            // レビューのタイトル
 	Name          string    `gorm:"not null"`            // レビューの名前
@@ -112,7 +112,7 @@ type Review struct {
 	ReviewFactors string    `gorm:"not null"`            // レビューの評価要素
 	Sections      string    `gorm:"not null"`            // レビュー説明セクション
 	CreatedAt     time.Time `gorm:""`                    // 作成日
-	UpdatedAt     time.Time `gorm:""`                    // 更新日
+	UpdatedAt     time.Time `gorm:"index"`               // 更新日
 }
 
 type Notification struct {
