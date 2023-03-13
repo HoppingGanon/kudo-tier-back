@@ -88,7 +88,6 @@ func CheckSession(c echo.Context, requireUser bool, updateExpiredTime bool) (Ses
 	}
 
 	if updateExpiredTime {
-		fmt.Println(user.KeepSession)
 		exTime := time.Now().Add(time.Duration(user.KeepSession) * time.Second)
 		tx.Update("expired_time", exTime)
 		session.ExpiredTime = exTime
