@@ -121,6 +121,7 @@ type Notification struct {
 	IsImportant bool      `gorm:"default:false;not null"` // 重要情報フラグ
 	Url         string    `gorm:""`                       // クリックした際に飛ぶURL
 	CreatedAt   time.Time `gorm:"index"`                  // 発信日時
+	IsDeleted   bool      `gorm:"default:false;index"`    // 削除フラグ
 }
 
 type NotificationRead struct {
