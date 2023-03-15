@@ -44,13 +44,13 @@ var reviewValidation = ReviewValidation{
 func validReview(reviewData ReviewEditingData, factorParams []ReviewParamData, pointType string) (bool, *ErrorResponse) {
 	// バリデーションチェック
 	// Name
-	f, e := validText("レビュー名", "vrev-001", reviewData.Name, true, -1, reviewValidation.nameLenMax, "", "")
+	f, e := validText("レビュー名", "vtir-001", reviewData.Name, true, -1, reviewValidation.nameLenMax, "", "")
 	if !f {
 		return f, e
 	}
 
 	// Title
-	f, e = validText("レビュータイトル", "vrev-002", reviewData.Title, false, -1, reviewValidation.titleLenMax, "", "")
+	f, e = validText("レビュータイトル", "vtir-002", reviewData.Title, false, -1, reviewValidation.titleLenMax, "", "")
 	if !f {
 		return f, e
 	}
@@ -198,7 +198,7 @@ func postReqReview(c echo.Context) error {
 	if err != nil {
 		// 新しく作成した途中の画像ファイルを削除
 		deleteSectionImg(madeSections)
-		return c.JSON(400, MakeError("prev-008", ""))
+		return c.JSON(400, MakeError("prev-008", "説明文セクションの変換に失敗しました"))
 	}
 
 	// 使用しなくなったファイルを強制削除(POSTならば存在しない)
@@ -316,7 +316,7 @@ func updateReqReview(c echo.Context) error {
 	if err != nil {
 		// 新しく作成した途中の画像ファイルを削除
 		deleteSectionImg(madeSections)
-		return c.JSON(400, MakeError("urev-009", "セクションの変換に失敗しました"))
+		return c.JSON(400, MakeError("urev-009", "説明文セクションの変換に失敗しました"))
 	}
 
 	// 使用しなくなったファイルを強制削除(POSTならば存在しない)

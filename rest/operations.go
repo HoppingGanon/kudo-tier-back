@@ -27,19 +27,19 @@ func getUserFile(c echo.Context) error {
 	// 不正なファイル名へのアクセスを防ぐ
 	if !common.TestRegexp(`^[a-zA-Z0-9]*$`, userId) {
 		// ユーザーID
-		return c.JSON(http.StatusBadRequest, MakeError("gen0-001", "不正なディレクトリが指定されました"))
+		return c.JSON(http.StatusBadRequest, MakeError("gusf-001", "不正なディレクトリが指定されました"))
 	}
 	if !common.Contains(data, []string{"tier", "review", "user"}) {
 		// データ(機能種別)
-		return c.JSON(http.StatusBadRequest, MakeError("gen0-002", "不正なディレクトリが指定されました"))
+		return c.JSON(http.StatusBadRequest, MakeError("gusf-002", "不正なディレクトリが指定されました"))
 	}
 	if !common.TestRegexp(`^[a-zA-Z0-9]*$`, id) {
 		// ID
-		return c.JSON(http.StatusBadRequest, MakeError("gen0-003", "不正なディレクトリが指定されました"))
+		return c.JSON(http.StatusBadRequest, MakeError("gusf-003", "不正なディレクトリが指定されました"))
 	}
 	if !common.TestRegexp(`^[a-zA-Z0-9/._]*$`, fname) {
 		// ファイル名
-		return c.JSON(http.StatusBadRequest, MakeError("gen0-004", "不正なファイルが指定されました"))
+		return c.JSON(http.StatusBadRequest, MakeError("gusf-004", "不正なファイルが指定されました"))
 	}
 
 	path := os.Getenv("BACK_AP_FILE_PATH") + "/" + userId + "/" + data + "/" + id + "/" + fname
@@ -211,11 +211,11 @@ func createParags(parags []ParagEditingData, oldImageMap map[string]bool, userId
 					madeParags[i].Body = parag.Body
 				} else {
 					// 存在しない場合は異常なケース
-					return madeParags, oldImageMap, MakeError("cpgs-002", "説明画像に存在しないファイルが指定されました")
+					return madeParags, oldImageMap, MakeError("cpgs-001", "説明画像に存在しないファイルが指定されました")
 				}
 			} else {
 				// クライアント側で変更あり
-				path, er := savePicture(userId, data, id, fname, "", parag.Body, "cpgs-01", sectionValidation.paragImgMax, sectionValidation.paragImgAspect, sectionValidation.paragImageQuality)
+				path, er := savePicture(userId, data, id, fname, "", parag.Body, "cpgs-002", sectionValidation.paragImgMax, sectionValidation.paragImgAspect, sectionValidation.paragImageQuality)
 				if er != nil {
 					return madeParags, oldImageMap, er
 				}

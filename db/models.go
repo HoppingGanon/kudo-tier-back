@@ -8,7 +8,7 @@ import (
 // Twitter OAuth1.0a, 2.0認証が完了するまでの間、フロントとバックの間でデータを共有するために用いる
 type TempSession struct {
 	SessionID  string    `gorm:"primaryKey;not null"`      // 一時セッションID
-	AccessTime time.Time `gorm:"not null"`                 // アクセスした時間
+	AccessTime time.Time `gorm:"not null;index"`           // アクセスした時間
 	IpAddress  string    `gorm:"not null;default:0.0.0.0"` // セッション確立時のIPアドレス
 
 	LoginService  string `gorm:"not null"` // ログインに使用したサービス

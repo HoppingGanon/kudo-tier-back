@@ -156,10 +156,10 @@ func updateReqUser(c echo.Context) error {
 	}
 	if userData.IconIsChanged {
 		if len(userData.IconBase64) > int(userValidation.iconMaxBytes*1024*8/6) {
-			return c.JSON(400, MakeError("pusr-004", "画像のサイズが大きすぎます"))
+			return c.JSON(400, MakeError("pusr-003", "画像のサイズが大きすぎます"))
 		}
 	}
-	f, er = validInteger("セッション保持時間", "uusr-003", userData.KeepSession, 10, 1440)
+	f, er = validInteger("セッション保持時間", "uusr-004", userData.KeepSession, 10, 1440)
 	if !f {
 		return c.JSON(400, er)
 	}
@@ -167,18 +167,18 @@ func updateReqUser(c echo.Context) error {
 	var cnt int64
 	user, tx := db.GetUser(uid, "*")
 	if err != nil {
-		return c.JSON(400, MakeError("uusr-004", "ユーザーの更新に失敗しました"))
+		return c.JSON(400, MakeError("uusr-005", "ユーザーの更新に失敗しました"))
 	}
 	tx.Count(&cnt)
 	if cnt != 1 {
-		return c.JSON(400, MakeError("uusr-005", "ユーザーの更新に失敗しました"))
+		return c.JSON(400, MakeError("uusr-006", "ユーザーの更新に失敗しました"))
 	}
 
 	// 画像データの名前を生成
 	path := ""
 	if userData.IconIsChanged {
 		// 画像の保存
-		path, er = savePicture(user.UserId, "user", "user", "icon_", user.IconUrl, userData.IconBase64, "uusr-006", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
+		path, er = savePicture(user.UserId, "user", "user", "icon_", user.IconUrl, userData.IconBase64, "uusr-007", reviewValidation.iconMaxEdge, reviewValidation.iconAspectRate, 92)
 		if er != nil {
 			return c.JSON(400, er)
 		}

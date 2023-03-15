@@ -65,36 +65,36 @@ func validTier(tierData TierEditingData) (bool, *ErrorResponse) {
 
 	// PointTypeのチェック
 	if !IsPointType(tierData.PointType) {
-		return false, MakeError("vtir-004", "ポイント表示方法が異常です")
+		return false, MakeError("vtir-003", "ポイント表示方法が異常です")
 	}
 
 	// 画像が既定のサイズ以下であることを確認する
 	if tierData.ImageIsChanged {
 		if len(tierData.ImageBase64) > int(tierValidation.imgMaxBytes*1024*8/6) {
-			return false, MakeError("vtir-005", "画像のサイズが大きすぎます")
+			return false, MakeError("vtir-004", "画像のサイズが大きすぎます")
 		}
 	}
 
 	// ReviewFactorParamsのチェック
 	if tierData.ReviewFactorParams == nil {
-		return false, MakeError("vtir-006", "評価項目がNULLです")
+		return false, MakeError("vtir-005", "評価項目がNULLです")
 	} else {
 		f := false
 		for _, v := range tierData.ReviewFactorParams {
 			f = f || v.IsPoint
 		}
 		if !f {
-			return false, MakeError("vtir-007", "ポイントの評価項目が少なくとも一つ以上必要です")
+			return false, MakeError("vtir-006", "ポイントの評価項目が少なくとも一つ以上必要です")
 		}
 	}
 
 	if len(tierData.ReviewFactorParams) > tierValidation.paramsLenMax {
-		return false, MakeError("vtir-008", fmt.Sprintf("ポイントの評価項目は最大で%d個までです", tierValidation.paramsLenMax))
+		return false, MakeError("vtir-007", fmt.Sprintf("ポイントの評価項目は最大で%d個までです", tierValidation.paramsLenMax))
 	}
 
 	for _, v := range tierData.ReviewFactorParams {
 		// 評価項目名の文字数チェック
-		f, er = validText("評価項目名", "vtir-009", v.Name, true, -1, tierValidation.paramsLenMax, "", "")
+		f, er = validText("評価項目名", "vtir-008", v.Name, true, -1, tierValidation.paramsLenMax, "", "")
 		if !f {
 			return f, er
 		}
@@ -103,19 +103,19 @@ func validTier(tierData TierEditingData) (bool, *ErrorResponse) {
 	for _, v := range tierData.ReviewFactorParams {
 		// 評価項目の重み範囲チェック
 		if v.IsPoint {
-			f, er = validInteger("評価項目名", "vtir-010", v.Weight, 0, 100)
+			f, er = validInteger("評価項目名", "vtir-009", v.Weight, 0, 100)
 			if !f {
 				return f, er
 			}
 		}
 	}
 
-	f, er = validInteger("Tier上寄せ調整値", "vtir-011", tierData.PullingUp, 0, 40)
+	f, er = validInteger("Tier上寄せ調整値", "vtir-010", tierData.PullingUp, 0, 40)
 	if !f {
 		return f, er
 	}
 
-	f, er = validInteger("Tier下寄せ調整値", "vtir-012", tierData.PullingDown, 0, 40)
+	f, er = validInteger("Tier下寄せ調整値", "vtir-011", tierData.PullingDown, 0, 40)
 	if !f {
 		return f, er
 	}
@@ -200,7 +200,7 @@ func postReqTier(c echo.Context) error {
 	if err != nil {
 		// 新しく作成した途中の画像ファイルを削除
 		deleteParagsImg(madeParags)
-		return c.JSON(400, MakeError("ptir-004", ""))
+		return c.JSON(400, MakeError("ptir-004", "説明文セクションの変換に失敗しました"))
 	}
 
 	err = db.CreateTier(session.UserId, tierId, tierData.Name, path, string(parags), tierData.PointType, string(params3), tierData.PullingUp, tierData.PullingDown)
@@ -303,7 +303,7 @@ func updateReqTier(c echo.Context) error {
 	if err != nil {
 		// 新しく作成した途中の画像ファイルを削除
 		deleteParagsImg(madeParags)
-		return c.JSON(400, MakeError("utir-005", ""))
+		return c.JSON(400, MakeError("utir-005", "説明文セクションの変換に失敗しました"))
 	}
 
 	// 使用しなくなったファイルを強制削除(POSTならば存在しない)
