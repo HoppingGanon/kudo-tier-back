@@ -222,6 +222,10 @@ func createParags(parags []ParagEditingData, oldImageMap map[string]bool, userId
 				madeParags[i].Type = "imageLink"
 				madeParags[i].Body = path
 			}
+		} else if parag.Type == "text" {
+			// テキストの場合
+			madeParags[i].Type = parag.Type
+			madeParags[i].Body = common.ConvertHtmlSafeString(parag.Body)
 		} else {
 			// 画像ファイル以外
 			madeParags[i].Type = parag.Type
@@ -245,7 +249,7 @@ func createSections(sections []SectionEditingData, oldImageMap map[string]bool, 
 			return madeSections, oldImageMap, er
 		}
 		madeSections[i] = SectionData{
-			Title:  section.Title,
+			Title:  common.ConvertHtmlSafeString(section.Title),
 			Parags: parags,
 		}
 	}

@@ -166,6 +166,10 @@ func postReqReview(c echo.Context) error {
 		return c.JSON(400, MakeError("prev-005", "レビューIDが生成出来ませんでした しばらく時間を開けて実行してください"))
 	}
 
+	for i := range reviewData.ReviewFactors {
+		reviewData.ReviewFactors[i].Info = common.ConvertHtmlSafeString(reviewData.ReviewFactors[i].Info)
+	}
+
 	factors, err := json.Marshal(reviewData.ReviewFactors)
 	if err != nil {
 		return c.JSON(400, MakeError("prev-006", "レビューの評価情報が不正です"))
@@ -271,6 +275,10 @@ func updateReqReview(c echo.Context) error {
 	f, e := validReview(reviewData, params, tier.PointType)
 	if !f {
 		return c.JSON(400, e)
+	}
+
+	for i := range reviewData.ReviewFactors {
+		reviewData.ReviewFactors[i].Info = common.ConvertHtmlSafeString(reviewData.ReviewFactors[i].Info)
 	}
 
 	factors, err := json.Marshal(reviewData.ReviewFactors)

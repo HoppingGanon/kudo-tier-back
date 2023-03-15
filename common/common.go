@@ -125,3 +125,13 @@ func SplitQueryChain(s string) map[string]string {
 	}
 	return m
 }
+
+// XSS対策で、HTMLセーフな文字に置き換える
+func ConvertHtmlSafeString(s string) string {
+	s = strings.ReplaceAll(s, "<", "＜")
+	s = strings.ReplaceAll(s, ">", "＞")
+	s = strings.ReplaceAll(s, "&", "＆")
+	s = strings.ReplaceAll(s, "'", "’")
+	s = strings.ReplaceAll(s, "\"", "”")
+	return s
+}

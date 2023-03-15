@@ -55,7 +55,7 @@ func CreateTier(
 		tier = Tier{
 			TierId:       tierId,
 			UserId:       userId,
-			Name:         name,
+			Name:         common.ConvertHtmlSafeString(name),
 			ImageUrl:     "",
 			Parags:       parags,
 			PointType:    pointType,
@@ -67,7 +67,7 @@ func CreateTier(
 		tier = Tier{
 			TierId:       tierId,
 			UserId:       userId,
-			Name:         name,
+			Name:         common.ConvertHtmlSafeString(name),
 			ImageUrl:     path,
 			Parags:       parags,
 			PointType:    pointType,
@@ -95,7 +95,7 @@ func UpdateTierTx(
 	pullingDown int,
 ) error {
 	tier.TierId = tierId
-	tier.Name = name
+	tier.Name = common.ConvertHtmlSafeString(name)
 	tier.Parags = parags
 	tier.PointType = pointType
 	tier.FactorParams = factorParams

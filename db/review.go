@@ -99,8 +99,8 @@ func CreateReview(
 		ReviewId:      reviewId,
 		UserId:        userId,
 		TierId:        tierId,
-		Title:         title,
-		Name:          name,
+		Title:         common.ConvertHtmlSafeString(title),
+		Name:          common.ConvertHtmlSafeString(name),
 		IconUrl:       path,
 		ReviewFactors: reviewFactors,
 		Sections:      sections,
@@ -119,8 +119,8 @@ func UpdateReview(
 	sections string,
 ) error {
 	var tx *gorm.DB
-	review.Name = name
-	review.Title = title
+	review.Name = common.ConvertHtmlSafeString(name)
+	review.Title = common.ConvertHtmlSafeString(title)
 	review.ReviewFactors = reviewFactors
 	review.Sections = sections
 	if iconIsChanged {

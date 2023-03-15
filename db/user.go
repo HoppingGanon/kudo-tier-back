@@ -61,8 +61,8 @@ func CreateUser(service string, name string, profile string, iconUrl string, twi
 		if !ExistsUser(id) {
 			user := User{
 				UserId:           id,
-				Name:             name,
-				Profile:          profile,
+				Name:             common.ConvertHtmlSafeString(name),
+				Profile:          common.ConvertHtmlSafeString(profile),
 				IconUrl:          iconUrl,
 				AllowTwitterLink: false,
 				KeepSession:      7200,
@@ -85,8 +85,8 @@ func CreateUser(service string, name string, profile string, iconUrl string, twi
 
 func UpdateUser(user User, name string, profile string, iconUrl string, iconIsChanged bool, allowTwitterLink bool, keepSession int) error {
 	var tx *gorm.DB
-	user.Name = name
-	user.Profile = profile
+	user.Name = common.ConvertHtmlSafeString(name)
+	user.Profile = common.ConvertHtmlSafeString(profile)
 	if iconIsChanged {
 		user.IconUrl = iconUrl
 	}

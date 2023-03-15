@@ -127,7 +127,7 @@ func removeParamIndex(params []ReviewParamData) []ReviewParam {
 	list := make([]ReviewParam, len(params))
 	for i, v := range params {
 		list[i] = ReviewParam{
-			Name:    v.Name,
+			Name:    common.ConvertHtmlSafeString(v.Name),
 			IsPoint: v.IsPoint,
 			Weight:  v.Weight,
 		}
@@ -165,25 +165,16 @@ func postReqTier(c echo.Context) error {
 		return c.JSON(400, e)
 	}
 
-	params, err := json.Marshal(removeParamIndex(tierData.ReviewFactorParams))
+	var params2 []ReviewParam = removeParamIndex(tierData.ReviewFactorParams)
+
+	params3, err := json.Marshal(params2)
 	if err != nil {
 		return c.JSON(400, MakeError("ptir-001", "重みの登録に失敗しました"))
 	}
 
-	var params2 []ReviewParam
-	err = json.Unmarshal([]byte(params), &params2)
-	if err != nil {
-		return c.JSON(400, MakeError("ptir-002", "重みの登録に失敗しました"))
-	}
-
-	params3, err := json.Marshal(params2)
-	if err != nil {
-		return c.JSON(400, MakeError("ptir-003", "重みの登録に失敗しました"))
-	}
-
 	tierId, err := db.CreateTierId(session.UserId)
 	if err != nil {
-		return c.JSON(400, MakeError("ptir-004", "TierIDが生成出来ませんでした しばらく時間を開けて実行してください"))
+		return c.JSON(400, MakeError("ptir-002", "TierIDが生成出来ませんでした しばらく時間を開けて実行してください"))
 	}
 
 	// 画像データの名前を生成
@@ -191,7 +182,7 @@ func postReqTier(c echo.Context) error {
 	var er *ErrorResponse
 	if tierData.ImageIsChanged {
 		// 画像の保存
-		path, er = savePicture(session.UserId, "tier", tierId, "image_", "", tierData.ImageBase64, "ptir-005", tierValidation.imgMaxEdge, tierValidation.imgAspectRate, 80)
+		path, er = savePicture(session.UserId, "tier", tierId, "image_", "", tierData.ImageBase64, "ptir-003", tierValidation.imgMaxEdge, tierValidation.imgAspectRate, 80)
 		if er != nil {
 			return c.JSON(400, er)
 		}
@@ -209,7 +200,7 @@ func postReqTier(c echo.Context) error {
 	if err != nil {
 		// 新しく作成した途中の画像ファイルを削除
 		deleteParagsImg(madeParags)
-		return c.JSON(400, MakeError("utir-006", ""))
+		return c.JSON(400, MakeError("ptir-004", ""))
 	}
 
 	err = db.CreateTier(session.UserId, tierId, tierData.Name, path, string(parags), tierData.PointType, string(params3), tierData.PullingUp, tierData.PullingDown)
@@ -218,8 +209,8 @@ func postReqTier(c echo.Context) error {
 	if err != nil {
 		// 新しく作成した途中の画像ファイルを削除
 		deleteParagsImg(madeParags)
-		db.WriteErrorLog(session.UserId, requestIp, "ptir-007", "Tierの作成に失敗しました", err.Error())
-		return c.JSON(400, MakeError("ptir-007", "Tierの作成に失敗しました"))
+		db.WriteErrorLog(session.UserId, requestIp, "ptir-005", "Tierの作成に失敗しました", err.Error())
+		return c.JSON(400, MakeError("ptir-005", "Tierの作成に失敗しました"))
 	}
 
 	db.WriteOperationLog(session.UserId, requestIp, "ptir", tierId)
@@ -271,7 +262,7 @@ func updateReqTier(c echo.Context) error {
 	newParams := make([]ReviewParam, newParamsLen)
 	for i, param := range tierData.ReviewFactorParams {
 		newParams[i] = ReviewParam{
-			Name:    param.Name,
+			Name:    common.ConvertHtmlSafeString(param.Name),
 			IsPoint: param.IsPoint,
 			Weight:  param.Weight,
 		}
