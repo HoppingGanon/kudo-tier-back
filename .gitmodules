@@ -1,0 +1,3 @@
+[submodule "session"]
+	path = session
+	url = git@github.com:HoppingGanon/kudo-tier-back-session.git
