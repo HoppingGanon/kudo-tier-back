@@ -52,7 +52,7 @@ func CreateUser(service string, name string, profile string, iconUrl string, twi
 		}
 	}
 
-	for i := 0; i < retryCreateCnt; i++ {
+	for i := 0; i < RetryCreateCnt; i++ {
 		// ランダムな文字列を生成して、IDにする
 		id, err = common.MakeRandomChars(idSize, twitterId)
 		if err != nil {

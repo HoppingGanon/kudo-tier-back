@@ -24,7 +24,7 @@ const TempSessionAlive = 60
 const TempSessionDelSpan = 60
 
 // 各ID作成に失敗した際の最大試行回数
-const retryCreateCnt = 3
+const RetryCreateCnt = 3
 
 // 各IDの桁数
 const idSize = 16
@@ -104,23 +104,6 @@ func CheckLastPost(session Session) bool {
 // 投稿時間を記録
 func UpdateLastPostAt(session Session) {
 	Db.Model(&session).Update("last_post_at", time.Now())
-}
-
-func MakeSession(seed string) (string, error) {
-	var session Session
-	var cnt int64
-loop:
-	for i := 0; i < retryCreateCnt; i++ {
-		sessionId, err := common.MakeSession(seed)
-		if err != nil {
-			continue loop
-		}
-		Db.Where("session_id = ?", sessionId).Find(&session).Count(&cnt)
-		if cnt == 0 {
-			return sessionId, nil
-		}
-	}
-	return "", errors.New("セッション作成に失敗")
 }
 
 func WordToReg(word string) string {

@@ -25,7 +25,7 @@ func ExistsTier(tid string) bool {
 func CreateTierId(userId string) (string, error) {
 	var id string
 	var err error
-	for i := 0; i < retryCreateCnt; i++ {
+	for i := 0; i < RetryCreateCnt; i++ {
 		// ランダムな文字列を生成して、IDにする
 		id, err = common.MakeRandomChars(idSize, userId)
 		if err != nil {
