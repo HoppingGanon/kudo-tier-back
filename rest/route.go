@@ -1,16 +1,18 @@
 package rest
 
 import (
+	session "reviewmakerback/session"
+
 	"github.com/labstack/echo"
 )
 
 func Route(e *echo.Echo) {
-	e.GET("/auth/tempsession/:service/:version", getReqTempSession)
-	e.POST("/auth/session/:service/:version", postReqSession)
-	e.PATCH("/auth/service/:service/:version", updateService)
-	e.DELETE("/auth/service/:service", deleteService)
-	e.DELETE("/auth/session", delReqSession)
-	e.GET("/auth/check-session", getReqCheckSession)
+	e.GET("/auth/tempsession/:service/:version", session.GetReqTempSession)
+	e.POST("/auth/session/:service/:version", session.PostReqSession)
+	e.PATCH("/auth/service/:service/:version", session.UpdateService)
+	e.DELETE("/auth/service/:service", session.DeleteService)
+	e.DELETE("/auth/session", session.DelReqSession)
+	e.GET("/auth/check-session", session.GetReqCheckSession)
 	e.POST("/user", postReqUser)
 	e.DELETE("/user/:uid/try", deleteUser1)
 	e.DELETE("/user/:uid/commit", deleteUser2)

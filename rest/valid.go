@@ -8,12 +8,6 @@ import (
 	"unicode/utf8"
 )
 
-// 1つの発信元IPあたりの最大保持一時セッション数
-const maxSessionPerIp = 16
-
-// codeVeriferの文字数
-const codeVeriferCnt = 64
-
 type UserValidation struct {
 	// ユーザー表示名の最大文字数
 	nameLenMax int
@@ -198,28 +192,4 @@ func IsTierSortType(v string) bool {
 		"createdAtDesc",
 		"createdAtAsc",
 	})
-}
-
-func ValidServiceVersion(service string, version string) (bool, string, int) {
-	if version == "1" {
-		if service == "twitter" {
-			return true, service, 1
-		}
-	} else if version == "2" {
-		if service == "twitter" {
-			return true, service, 2
-		} else if service == "google" {
-			return true, service, 2
-		}
-	}
-	return false, "", 0
-}
-
-func ValidService(service string) (bool, string) {
-	if service == "twitter" {
-		return true, service
-	} else if service == "google" {
-		return true, service
-	}
-	return false, service
 }

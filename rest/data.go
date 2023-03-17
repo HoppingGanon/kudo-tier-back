@@ -19,17 +19,6 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
-type TwitterUserData struct {
-	Id              string `json:"id"`                // 固有ID
-	UserName        string `json:"username"`          // @名
-	Name            string `json:"name"`              // 表示名
-	ProfileImageUrl string `json:"profile_image_url"` // アイコン
-}
-
-type TwitterUser struct {
-	Data TwitterUserData `json:"data"`
-}
-
 type UserCreatingData struct {
 	Name       string `json:"name"`       // 登録名
 	Profile    string `json:"profile"`    // 自己紹介文
