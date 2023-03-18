@@ -526,5 +526,5 @@ func deleteReviewReq(c echo.Context) error {
 	}
 
 	db.WriteOperationLog(session.UserId, requestIp, "drev", rid)
-	return c.NoContent(200)
+	return c.NoContent(204)
 }

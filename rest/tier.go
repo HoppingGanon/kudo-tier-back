@@ -561,5 +561,5 @@ func deleteReqTier(c echo.Context) error {
 	deleteFolder(tier.UserId, "tier", tier.TierId, "dtir-004", requestIp)
 
 	db.WriteOperationLog(session.UserId, requestIp, "dtir", tid)
-	return c.NoContent(200)
+	return c.NoContent(204)
 }
