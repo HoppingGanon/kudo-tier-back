@@ -1,0 +1,1585 @@
+openapi: "3.0.0"
+info:
+  title: kudo-tier API
+  version: "0.5.1"
+servers:
+  - url: http://api.kd-tier.hopgn.com
+paths:
+  # ================================== session ==================================
+  /auth/tempsession/{service}/{version}:
+    x-summary: 一時セッション
+    get:
+      summary: 一時セッションを取得する
+      description: 一時セッションとサービス連携に必要な情報を取得するAPI
+      parameters:
+        - in: path
+          name: service
+          description: 連携対象のサービス'twitter'または'google'
+          required: true
+          schema: 
+            type: string
+        - in: path
+          name: version
+          description: 連携対象のサービスOAuthバージョン1または2
+          required: true
+          schema: 
+            type: number
+      responses:
+        200:
+          description: "一時セッションが返却されます"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TempSession"
+        400:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/session/{service}/{version}:
+    x-summary: セッション
+    post:
+      summary: セッションを作成する
+      description: セッションを取得するAPI
+      parameters:
+        - in: path
+          name: service
+          description: 連携対象のサービス'twitter'または'google'
+          required: true
+          schema: 
+            type: string
+        - in: path
+          name: version
+          description: 連携対象のサービスOAuthバージョン1または2
+          required: true
+          schema: 
+            type: number
+      requestBody:
+        description: セッションの作成に必要な一時セッション等の情報
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientTempSession"
+      responses:
+        201:
+          description: "セッションが返却されます"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        400:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        403:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+            
+    patch:
+      summary: ログイン状態の更新
+      description: セッション保持中のユーザーに新たな連携サービスを追加する
+      parameters:
+        - in: header
+          name: Authorization
+          description: セッション（ベアラートークン）
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: service
+          description: 連携対象のサービス'twitter'または'google'
+          required: true
+          schema: 
+            type: string
+        - in: path
+          name: version
+          description: 連携対象のサービスOAuthバージョン1または2
+          required: true
+          schema: 
+            type: number
+      responses:
+        204:
+          description: "連携の成功"
+        400:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        403:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/service/{service}:
+    x-summary: 連携サービス
+    delete:
+      summary: サービスの削除
+      description: セッション保持中のユーザーから連携サービスを削除する
+      parameters:
+        - in: header
+          name: Authorization
+          description: セッション（ベアラートークン）
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: service
+          description: 連携対象のサービス'twitter'または'google'
+          required: true
+          schema: 
+            type: string
+      responses:
+        204:
+          description: "連携解除の成功"
+        400:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        403:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/session:
+    x-summary: セッション
+    delete:
+      summary: セッションの削除
+      description: セッションを削除する（ログアウト）
+      parameters:
+        - in: header
+          name: Authorization
+          description: セッション（ベアラートークン）
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: service
+          description: 連携対象のサービス'twitter'または'google'
+          required: true
+          schema: 
+            type: string
+      responses:
+        204:
+          description: "セッション削除の成功（ただし、セッションが存在しなかった場合も204を返す）"
+        400:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        403:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/check-session:
+    x-summary: セッションのチェック
+    get:
+      summary: セッションの存在チェック
+      description: セッションの存在をチェックする、またセッションの期限を更新する
+      parameters:
+        - in: header
+          name: Authorization
+          description: セッション（ベアラートークン）
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: service
+          description: 連携対象のサービス'twitter'または'google'
+          required: true
+          schema: 
+            type: string
+      responses:
+        204:
+          description: "セッション削除の成功（ただし、セッションが存在しなかった場合も204を返す）"
+        400:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        403:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ================================== user ==================================
+
+  /user:
+    x-summary: ユーザー
+    post:
+      summary: ユーザーの作成
+      description: ログイン済みかつユーザー未作成の場合、ユーザーを作成
+      parameters:
+        - in: header
+          name: Authorization
+          description: セッション（ベアラートークン）
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: ユーザーの作成に必要な情報
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserCreatingData"
+      responses:
+        201:
+          description: "ユーザー作成の成功"
+          content:
+            application/json:
+              schema:
+                type: string
+                description: ユーザーID
+        400:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        403:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /user/{uid}/try:
+    x-summary: ユーザー
+    delete:
+      summary: ユーザーの削除
+      description: ユーザー削除を行う第一ステップ
+      parameters:
+        - in: header
+          name: Authorization
+          description: セッション（ベアラートークン）
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: uid
+          description: ユーザーID
+          required: true
+          schema: 
+            type: string
+      responses:
+        202:
+          description: "ユーザー削除可能な状態に移行"
+          content:
+            application/json:
+              schema:
+                type: string
+                description: 削除コード
+        400:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        403:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /user/{uid}/commit:
+    x-summary: ユーザー
+    delete:
+      summary: ユーザーの削除
+      description: ユーザー削除を行う第一ステップ
+      parameters:
+        - in: header
+          name: Authorization
+          description: セッション（ベアラートークン）
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: uid
+          description: ユーザーID
+          required: true
+          schema: 
+            type: string
+        - in: query
+          name: delcode
+          description: 削除コード
+          required: true
+          schema: 
+            type: string
+      responses:
+        204:
+          description: "ユーザーの削除が成功"
+          content:
+            application/json:
+              schema:
+                type: string
+                description: ユーザーID
+        400:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        403:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /user/{uid}:
+    x-summary: ユーザー
+    get:
+      summary: ユーザー情報の取得
+      description: ユーザー情報の取得
+      parameters:
+        - in: header
+          name: Authorization
+          description: セッション（ベアラートークン）
+          required: false
+          schema:
+            type: string
+        - in: path
+          name: uid
+          description: ユーザーID
+          required: true
+          schema: 
+            type: string
+      responses:
+        200:
+          description: "ユーザー情報取得の成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserData"
+        400:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        403:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    patch:
+      summary: ユーザー情報の更新
+      description: ユーザー情報の更新
+      parameters:
+        - in: header
+          name: Authorization
+          description: セッション（ベアラートークン）
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: uid
+          description: ユーザーID
+          required: true
+          schema: 
+            type: string
+      requestBody:
+        description: ユーザーの作成に必要な情報
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserEditingData"
+      responses:
+        200:
+          description: "ユーザー更新の成功"
+          content:
+            application/json:
+              schema:
+                type: string
+                description: ユーザーID
+        400:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        403:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ================================== userfile ==================================
+
+  /userfile/{uid}/{method}/{id}/{fname}:
+    x-summary: ユーザーファイル
+    get:
+      summary: ユーザー情報の取得
+      description: ユーザー情報の取得
+      parameters:
+        - in: header
+          name: Authorization
+          description: セッション（ベアラートークン）
+          required: false
+          schema:
+            type: string
+        - in: path
+          name: uid
+          description: ユーザーID
+          required: true
+          schema: 
+            type: string
+      responses:
+        200:
+          description: "ユーザー情報取得の成功"
+          content:
+            application/json:
+              schema:
+                type: string
+                description: ファイルの内容をDataURLに変換したもの
+        400:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        404:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ================================== Tier ==================================
+
+  /tier:
+    x-summary: Tier
+    post:
+      summary: Tierの作成
+      description: Tierの作成
+      parameters:
+        - in: header
+          name: Authorization
+          description: セッション（ベアラートークン）
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Tierの作成に必要な情報
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TierEditingData"
+      responses:
+        201:
+          description: "Tier作成の成功"
+          content:
+            application/json:
+              schema:
+                type: string
+                description: TierID
+        400:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        403:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /tier/{tid}:
+    x-summary: Tier
+    get:
+      summary: Tierの取得
+      description: Tierの取得
+      parameters:
+        - in: header
+          name: Authorization
+          description: セッション（ベアラートークン）
+          required: false
+          schema:
+            type: string
+        - in: path
+          name: tid
+          description: TierID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: "Tier取得の成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TierData"
+        400:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        403:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    patch:
+      summary: Tierの更新
+      description: Tierの更新
+      parameters:
+        - in: header
+          name: Authorization
+          description: セッション（ベアラートークン）
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: tid
+          description: TierID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Tierの更新に必要な情報
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TierEditingData"
+      responses:
+        200:
+          description: "Tier更新の成功"
+          content:
+            application/json:
+              schema:
+                type: string
+                description: TierID
+        400:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        403:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      summary: Tierの削除
+      description: Tierの削除
+      parameters:
+        - in: header
+          name: Authorization
+          description: セッション（ベアラートークン）
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: tid
+          description: TierID
+          required: true
+          schema:
+            type: string
+      responses:
+        204:
+          description: "Tier削除の成功"
+        400:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        403:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /tiers:
+    x-summary: Tierリスト
+    get:
+      summary: Tierリストの取得
+      description: 条件を指定してTierリストの取得
+      parameters:
+        - in: header
+          name: Authorization
+          description: セッション（ベアラートークン）
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: userid
+          description: TierID
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: word
+          description: TierID
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: sorttype
+          description: TierID
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: page
+          description: TierID
+          required: false
+          schema:
+            type: number
+      responses:
+        200:
+          description: "Tier取得の成功"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TierData"
+        400:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        403:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+                
+
+# ================================== Review ==================================
+
+  /review:
+    x-summary: Review
+    post:
+      summary: Reviewの作成
+      description: Reviewの作成
+      parameters:
+        - in: header
+          name: Authorization
+          description: セッション（ベアラートークン）
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Reviewの作成に必要な情報
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewEditingData"
+      responses:
+        201:
+          description: "Review作成の成功"
+          content:
+            application/json:
+              schema:
+                type: string
+                description: ReviewID
+        400:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        403:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /review/{tid}:
+    x-summary: Review
+    get:
+      summary: Reviewの取得
+      description: Reviewの取得
+      parameters:
+        - in: header
+          name: Authorization
+          description: セッション（ベアラートークン）
+          required: false
+          schema:
+            type: string
+        - in: path
+          name: tid
+          description: ReviewID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: "Review取得の成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewDataWithParams"
+        400:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        403:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    patch:
+      summary: Reviewの更新
+      description: Reviewの更新
+      parameters:
+        - in: header
+          name: Authorization
+          description: セッション（ベアラートークン）
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: tid
+          description: ReviewID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Reviewの更新に必要な情報
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewEditingData"
+      responses:
+        200:
+          description: "Review更新の成功"
+          content:
+            application/json:
+              schema:
+                type: string
+                description: ReviewID
+        400:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        403:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      summary: Reviewの削除
+      description: Reviewの削除
+      parameters:
+        - in: header
+          name: Authorization
+          description: セッション（ベアラートークン）
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: tid
+          description: ReviewID
+          required: true
+          schema:
+            type: string
+      responses:
+        204:
+          description: "Review削除の成功"
+        400:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        403:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /review-pairs:
+    x-summary: Reviewリスト
+    get:
+      summary: Reviewリストの取得
+      description: 条件を指定してReviewリストの取得
+      parameters:
+        - in: header
+          name: Authorization
+          description: セッション（ベアラートークン）
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: userid
+          description: ReviewID
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: word
+          description: ReviewID
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: sorttype
+          description: ReviewID
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: page
+          description: ReviewID
+          required: false
+          schema:
+            type: number
+      responses:
+        200:
+          description: "Review取得の成功"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ReviewDataWithParams"
+        400:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        403:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ================================== Posts ==================================
+
+  /latest-post-lists/{uid}:
+    x-summary: ユーザーの投稿
+    get:
+      summary: ユーザーが最近投稿したTierとレビューのリスト取得
+      description: ユーザーが最近投稿したTierとレビューのリスト取得
+      parameters:
+        - in: header
+          name: Authorization
+          description: セッション（ベアラートークン）
+          required: false
+          schema:
+            type: string
+        - in: path
+          name: uid
+          description: UserID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: "リスト取得の成功"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PostListsData"
+        400:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        403:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ================================== Notifications ==================================
+
+  /common/notifications:
+    x-summary: 通知
+    get:
+      summary: 通知データを取得
+      description: 通知データを取得
+      parameters:
+        - in: header
+          name: Authorization
+          description: セッション（ベアラートークン）
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: "通知データ取得の成功"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+        400:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        403:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /common/notifications-count:
+    x-summary: 未読状態の通知数
+    get:
+      summary: 未読状態の通知数を取得
+      description: 未読状態の通知数を取得
+      parameters:
+        - in: header
+          name: Authorization
+          description: セッション（ベアラートークン）
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: "未読状態通知数取得の成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountData"
+        400:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        403:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /common/notification-read/{nid}:
+    x-summary: 通知の既読状態
+    patch:
+      summary: 通知の既読状態の変更
+      description: 通知の既読状態の変更
+      parameters:
+        - in: header
+          name: Authorization
+          description: セッション（ベアラートークン）
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: Authorization
+          description: 通知ID
+          required: true
+          schema:
+            type: number
+      responses:
+        204:
+          description: "通知の既読状態変更に成功"
+        400:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        403:
+          description: "エラーメッセージ"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    ErrorResponse:
+      properties:
+        code:
+          type: string
+          description: エラーコード(xxxx-nnn[-mmm] xxxは機能名 nnnは位置 mmmは種類)
+        message:
+          type: string
+          description: エラーメッセージ
+    TempSession:
+      description: ユーザーに送付する一時セッションと認証に必要な情報のペア
+      properties:
+        sessionId:
+          type: string
+          description: OA1, OA2 セッションID
+        url:
+          type: string
+          description: OA1, OA2 ユーザーが認証するためのページ
+    ClientTempSession:
+      description: ユーザーから返却される一時セッションと認証情報のペア
+      properties:
+        sessionId:
+          type: string
+          description: OA1, OA2 セッションID
+        authorizationCode:
+          type: string
+          description: OA2 認証コード
+        service:
+          type: string
+          description: OA1, OA2 連携サービス
+        version:
+          type: string
+          description: OA1, OA2 OAuth認証バージョン
+        state:
+          type: string
+          description: OA2 発行元をチェックするためのstate
+        oAuthToken:
+          type: string
+          description: OA1 発行済みのトークン
+        oAuthVerifier:
+          type: string
+          description: OA1 バックエンドで検証するコード
+    Session:
+      description: ユーザーに送付するセッション情報
+      properties:
+        sessionId:
+          type: string
+        userId:
+          type: string
+        expiredTime:
+          type: string
+        isNew:
+          type: boolean
+        iconUrl:
+          type: string
+        twitterUserName:
+          type: string
+          description: "@名"
+        twitterName:
+          type: string
+          description: 表示名
+        twitterIconUrl:
+          type: string
+          description: アイコン
+        googleEmail:
+          type: string
+        googleImageUrl:
+          type: string
+    TwitterToken:
+      description: Twitterの認証サーバーに送付するOAuth2認証に必要な情報
+      properties:
+        token_type:
+          type: string
+        expires_in:
+          type: number
+        access_token:
+          type: string
+        scope:
+          type: string
+    TwitterToken1:
+      description: Twitterに送付するOAuth1認証に必要な情報
+      properties:
+        oauth_token:
+          type: string
+          description: アクセストークン
+        oauth_token_secret:
+          type: string
+          description: アクセストークンシークレット
+        user_id:
+          type: string
+          description: "@名"
+        screen_name:
+          type: string
+          description: 表示名
+    OAuth1RequestToken:
+      description: Twitterから返却されるトークンとユーザーが認証操作を行うためのURL
+      properties:
+        path:
+          type: string
+        request_token:
+          type: string
+        request_secret:
+          type: string
+    TwitterUserData:
+      description: TwitterからOAuth2の操作で取得するユーザー情報
+      properties:
+        id:
+          type: string
+          description: 固有ID
+        username:
+          type: string
+          description: "@名"
+        name:
+          type: string
+          description: 表示名
+        profile_image_url:
+          type: string
+          description: アイコン
+    TwitterUser:
+      description: TwitterからOAuth2の操作で取得するユーザー情報
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/TwitterUserData"
+    GoogleInfoData:
+      description: Googleから取得するユーザー情報
+      properties:
+        id:
+          type: string
+          description: ユーザーID
+        email:
+          type: string
+          description: メールアドレス
+        verified_email:
+          type: boolean
+        name:
+          type: string
+          description: フルネーム
+        given_name:
+          type: string
+          description: 名前
+        family_name:
+          type: string
+          description: 苗字
+        picture:
+          type: string
+          description: プロフィール画像
+        locale:
+          type: string
+          description: 国
+    UserCreatingData:
+      properties:
+        name:
+          type: string
+          description: 登録名
+        profile:
+          type: string
+          description: 自己紹介文
+        accept:
+          type: boolean
+          description: 利用規約への同意(初回のみ)
+        iconBase64:
+          type: string
+          description: アイコンデータbase64
+    UserEditingData:
+      properties:
+        name:
+          type: string
+          description: 登録名
+        profile:
+          type: string
+          description: 自己紹介文
+        iconBase64:
+          type: string
+          description: アイコンデータbase64
+        iconIsChanged:
+          type: boolean
+          description: アイコンが変更されているかどうか
+        allowTwitterLink:
+          type: boolean
+          description: Twitterへのリンク許可
+        keepSession:
+          type: number
+          description: セッション保持時間(自分自身でのログイン時のみ開示)
+    UserData:
+      properties:
+        userId:
+          type: string
+          description: ユーザーID
+        isSelf:
+          type: boolean
+          description: ログインしている自分自身のデータかどうか
+        iconUrl:
+          type: string
+          description: アイコンURL
+        name:
+          type: string
+          description: 登録名
+        profile:
+          type: string
+          description: 自己紹介文
+        allowTwitterLink:
+          type: boolean
+          description: Twitterへのリンク許可
+        twitterId:
+          type: string
+          description: TwitterID(自分自身でのログイン時およびTwitter連携を許可した時のみ開示)
+        reviewsCount:
+          type: number
+          description: 今までに投稿したレビュー数
+        tiersCount:
+          type: number
+          description: 今までに投稿したTier数
+    SelfUserData:
+      properties:
+        userId:
+          type: string
+          description: ユーザーID
+        isSelf:
+          type: boolean
+          description: ログインしている自分自身のデータかどうか
+        iconUrl:
+          type: string
+          description: アイコンURL
+        name:
+          type: string
+          description: 登録名
+        profile:
+          type: string
+          description: 自己紹介文
+        allowTwitterLink:
+          type: boolean
+          description: Twitterへのリンク許可
+        keepSession:
+          type: number
+          description: セッション保持時間(自分自身でのログイン時のみ開示)
+        twitterId:
+          type: string
+          description: TwitterID(自分自身でのログイン時およびTwitter連携を許可した時のみ開示)
+        twitterUserName:
+          type: string
+          description: Twitter@名(自分自身でのログイン時のみ開示)
+        googleEmail:
+          type: string
+          description: Google Mailアドレス(自分自身でのログイン時のみ開示)
+        reviewsCount:
+          type: number
+          description: 今までに投稿したレビュー数
+        tiersCount:
+          type: number
+          description: 今までに投稿したTier数
+    TierData:
+      properties:
+        tierId:
+          type: string
+        userName:
+          type: string
+        userId:
+          type: string
+        userIconUrl:
+          type: string
+        name:
+          type: string
+        imageUrl:
+          type: string
+        parags:
+          type: array
+          items:
+            $ref: "#/components/schemas/ParagData"
+        reviews:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReviewData"
+
+        pointType:
+          type: string
+
+        reviewFactorParams:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReviewParamData"
+
+        pullingUp:
+          type: number
+
+        pullingDown:
+          type: number
+
+        createdAt:
+          type: string
+
+        updatedAt:
+          type: string
+
+    ReviewData:
+      properties:
+        reviewId:
+          type: string
+
+        userName:
+          type: string
+
+        userId:
+          type: string
+
+        userIconUrl:
+          type: string
+
+        tierId:
+          type: string
+
+        title:
+          type: string
+
+        name:
+          type: string
+
+        iconUrl:
+          type: string
+
+        reviewFactors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReviewFactorData"
+
+        pointType:
+          type: string
+
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/SectionData"
+
+        createdAt:
+          type: string
+
+        updatedAt:
+          type: string
+
+    ReviewDataWithParams:
+      properties:
+        review:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReviewData"
+
+        params:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReviewParamData"
+
+        pullingDown:
+          type: number
+
+        pullingUp:
+          type: number
+
+    TierEditingData:
+      properties:
+        name:
+          type: string
+
+        imageBase64:
+          type: string
+
+        imageIsChanged:
+          type: boolean
+
+        parags:
+          type: array
+          items:
+            $ref: "#/components/schemas/ParagEditingData"
+
+        pointType:
+          type: string
+
+        reviewFactorParams:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReviewParamData"
+
+        pullingUp:
+          type: number
+
+        pullingDown:
+          type: number
+
+    ReviewEditingData:
+      properties:
+        tierId:
+          type: string
+
+        title:
+          type: string
+
+        name:
+          type: string
+
+        iconBase64:
+          type: string
+
+        iconIsChanged:
+          type: boolean
+
+        reviewFactors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReviewFactorData"
+
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/SectionEditingData"
+
+    ReviewFactorData:
+      properties:
+        info:
+          type: string
+
+        point:
+          type: number
+
+    ReviewParamData:
+      properties:
+        name:
+          type: string
+
+        isPoint:
+          type: boolean
+
+        weight:
+          type: number
+
+        index:
+          type: number
+
+    ReviewParam:
+      properties:
+        name:
+          type: string
+
+        isPoint:
+          type: boolean
+
+        weight:
+          type: number
+
+    SectionData:
+      properties:
+        title:
+          type: string
+
+        parags:
+          type: array
+          items:
+            $ref: "#/components/schemas/ParagData"
+
+    SectionEditingData:
+      properties:
+        title:
+          type: string
+
+        parags:
+          type: array
+          items:
+            $ref: "#/components/schemas/ParagEditingData"
+
+    ParagEditingData:
+      properties:
+        type:
+          type: string
+
+        body:
+          type: string
+
+        isChanged:
+          type: boolean
+
+    ParagData:
+      properties:
+        type:
+          type: string
+
+        body:
+          type: string
+
+    PostListsData:
+      properties:
+        tiers:
+          type: array
+          items:
+            $ref: "#/components/schemas/PostListItem"
+
+        reviews:
+          type: array
+          items:
+            $ref: "#/components/schemas/PostListItem"
+
+    PostListItem:
+      properties:
+        id:
+          type: string
+
+        name:
+          type: string
+
+    Notification:
+      properties:
+        id:
+          type: number
+
+        content:
+          type: string
+
+        isRead:
+          type: boolean
+
+        isImportant:
+          type: boolean
+
+        fromUserId:
+          type: string
+
+        url:
+          type: string
+
+        createdAt:
+          type: string
+    CountData:
+      properties:
+        count:
+          type: number
+    NotificationReadData:
+      properties:
+        isRead:
+          type: boolean
