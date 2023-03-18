@@ -13,5 +13,4 @@
 ## API設計
 OpenAPI 3.0にて設計しました。詳しくは以下のページを参照してください。
 
-* [kudo-tier API](doc/openapi.html)
-
+> [kudo-tier API 設計ドキュメント](https://hoppingganon.github.io/kudo-tier-back/api/openapi.html)
