@@ -9,7 +9,7 @@ paths:
   /auth/tempsession/{service}/{version}:
     x-summary: 一時セッション
     get:
-      summary: 一時セッションを取得する
+      summary: 一時セッションを取得
       description: 一時セッションとサービス連携に必要な情報を取得するAPI
       parameters:
         - in: path
@@ -41,7 +41,7 @@ paths:
   /auth/session/{service}/{version}:
     x-summary: セッション
     post:
-      summary: セッションを作成する
+      summary: セッションを作成
       description: セッションを取得するAPI
       parameters:
         - in: path
