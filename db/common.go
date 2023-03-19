@@ -9,9 +9,12 @@ import (
 func GetNotifications(userId string, limit int) ([]NotificationJoinRead, *gorm.DB) {
 	var notifications []NotificationJoinRead
 
-	db1 := Db.Order("created_at DESC, id DESC").Where("is_deleted = ?", false).Limit(limit).Model(&Notification{})
+	db1 := Db.Order("created_at DESC, id DESC").Limit(limit).Model(&Notification{})
 
-	tx := Db.Select("id, content, is_important, url, r.is_read as is_read, created_at").Table("(?) as t", db1)
+	// 未読状態が管理されてない場合、is_deleteなら最初から既読状態にする
+	isRead := "COALESCE(r.is_read, is_deleted)"
+
+	tx := Db.Select("id, content, is_important, url, "+isRead+" as is_read, created_at").Table("(?) as t", db1)
 	tx = tx.Joins("left join notification_reads as r on r.notification_id = t.id and r.user_id = ?", userId)
 	tx = tx.Scan(&notifications)
 
@@ -22,9 +25,12 @@ func GetNotifications(userId string, limit int) ([]NotificationJoinRead, *gorm.D
 func GetNotificationsCount(userId string, limit int) (int64, *gorm.DB) {
 	var cnt int64
 
-	db1 := Db.Order("created_at DESC, id DESC").Where("is_deleted = ?", false).Limit(limit).Model(&Notification{})
+	db1 := Db.Order("created_at DESC, id DESC").Limit(limit).Model(&Notification{})
 
-	db2 := Db.Select("content, is_important, url, r.is_read as is_read, created_at").Table("(?) as t", db1)
+	// 未読状態が管理されてない場合、is_deleteなら最初から既読状態にする
+	isRead := "COALESCE(r.is_read, is_deleted)"
+
+	db2 := Db.Select("content, is_important, url, "+isRead+" as is_read, created_at").Table("(?) as t", db1)
 	db2 = db2.Joins("left join notification_reads as r on r.notification_id = t.id and r.user_id = ?", userId)
 
 	// Postgresのみ可能な文
