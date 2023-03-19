@@ -86,5 +86,5 @@ func updateNotificationRead(c echo.Context) error {
 	if err != nil {
 		return c.JSON(400, MakeError("untr-002", "通知既読状態の更新に失敗しました"))
 	}
-	return c.NoContent(200)
+	return c.NoContent(204)
 }
