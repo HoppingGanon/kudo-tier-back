@@ -92,3 +92,24 @@ func TestCommonSplitQueryChain3(t *testing.T) {
 		t.Error("miss")
 	}
 }
+
+func TestCommonRegexp(t *testing.T) {
+	if !common.TestRegexp(`^[a-zA-Z0-9._]*$`, "abc123ABC") {
+		t.Error("miss")
+	}
+	if common.TestRegexp(`^[a-zA-Z0-9._]*$`, "abc123!ABC") {
+		t.Error("miss")
+	}
+	if common.TestRegexp(`^[a-zA-Z0-9._]*$`, "abc/123/ABC") {
+		t.Error("miss")
+	}
+	if common.TestRegexp(`^[a-zA-Z0-9._]*$`, "*") {
+		t.Error("miss")
+	}
+	if common.TestRegexp(`^[a-zA-Z0-9._]*$`, "../aaa") {
+		t.Error("miss")
+	}
+	if common.TestRegexp(`^[a-zA-Z0-9._]*$`, "..\\aaa") {
+		t.Error("miss")
+	}
+}
