@@ -1,4 +1,4 @@
-# kudo-tier-front （くどくどTierバックエンドエンド）
+# kudo-tier-back （くどくどTierバックエンドエンド）
 <a href="https://kd-tier.hopgn.com">
   <img src="doc/img/logo.png" width="20%"></img>
 </a>
