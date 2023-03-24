@@ -37,7 +37,7 @@ func getUserFile(c echo.Context) error {
 		// ID
 		return c.JSON(http.StatusBadRequest, MakeError("gusf-003", "不正なディレクトリが指定されました"))
 	}
-	if !common.TestRegexp(`^[a-zA-Z0-9/._]*$`, fname) {
+	if !common.TestRegexp(`^[a-zA-Z0-9._]*$`, fname) {
 		// ファイル名
 		return c.JSON(http.StatusBadRequest, MakeError("gusf-004", "不正なファイルが指定されました"))
 	}
