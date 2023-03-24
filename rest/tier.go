@@ -306,7 +306,7 @@ func updateReqTier(c echo.Context) error {
 		return c.JSON(400, MakeError("utir-005", "説明文セクションの変換に失敗しました"))
 	}
 
-	// 使用しなくなったファイルを強制削除(POSTならば存在しない)
+	// 使用しなくなったファイルを強制削除(POSTならばそもそも画像ファイルは存在しない)
 	deleteImageMap(imageMap)
 
 	var reviews []db.Review
@@ -315,41 +315,74 @@ func updateReqTier(c echo.Context) error {
 	var newFactorsBin []byte
 	var oldIndex int
 
-	err = db.Db.Transaction(func(tx *gorm.DB) error {
-		// 旧データを取得
-		tx1 := tx.Select("review_id, review_factors").Where("tier_id = ?", orgTier.TierId).Find(&reviews)
+	var ofas []ReviewParam
+	var ofa ReviewParam
 
-		if tx1.Error != nil {
-			return tx1.Error
-		}
+	err = json.Unmarshal([]byte(orgTier.FactorParams), &ofas)
+	if err != nil {
+		// 新しく作成した途中の画像ファイルを削除
+		deleteParagsImg(madeParags)
+		return c.JSON(400, MakeError("utir-008", "評価項目の情報を読み取れませんでした"))
+	}
 
-		for _, review := range reviews {
-			// 旧データをJSON化
-			err = json.Unmarshal([]byte(review.ReviewFactors), &oldFactors)
-			if err != nil {
-				return err
+	diffParams := false
+	if len(ofas) == len(tierData.ReviewFactorParams) {
+	LoopFa:
+		for i, fa := range tierData.ReviewFactorParams {
+			ofa = ofas[i]
+			if fa.Index != i {
+				// 並び順が変更されている、または新規項目がある
+				diffParams = true
+				break LoopFa
+			} else if fa.IsPoint != ofa.IsPoint {
+				// IsPoint区分が変更されている
+				diffParams = true
+				break LoopFa
 			}
-			// 新しい評価要素を入れる配列
-			newFactors = make([]ReviewFactorData, newParamsLen)
-			for i := range newFactors {
-				// 受け取ったデータから、旧配列のときにあった場所を読み取る
-				oldIndex = tierData.ReviewFactorParams[i].Index
-				if oldIndex < 0 {
-					// 負数であれば、新規追加されたものとして初期化する
-					newFactors[i] = ReviewFactorData{
-						Info:  "",
-						Point: 0,
+		}
+	} else {
+		// 配列の数が変更されている
+		diffParams = true
+	}
+
+	err = db.Db.Transaction(func(tx *gorm.DB) error {
+
+		// paramsの変更に合わせて、レビュー評点や情報を整理する
+		if diffParams {
+			// 旧データを取得
+			tx1 := tx.Select("review_id, review_factors, updated_at").Where("tier_id = ?", orgTier.TierId).Find(&reviews)
+
+			if tx1.Error != nil {
+				return tx1.Error
+			}
+
+			for _, review := range reviews {
+				// 旧データをデシリアライズ
+				err = json.Unmarshal([]byte(review.ReviewFactors), &oldFactors)
+				if err != nil {
+					return err
+				}
+				// 新しい評価要素を入れる配列
+				newFactors = make([]ReviewFactorData, newParamsLen)
+				for i := range newFactors {
+					// 受け取ったデータから、旧配列のときにあった場所を読み取る
+					oldIndex = tierData.ReviewFactorParams[i].Index
+					if oldIndex < 0 {
+						// 負数であれば、新規追加されたものとして初期化する
+						newFactors[i] = ReviewFactorData{
+							Info:  "",
+							Point: 0,
+						}
+					} else if oldIndex < len(oldFactors) {
+						// 0以上であれば、旧配列の位置から新配列の位置に移動する
+						newFactors[i] = oldFactors[oldIndex]
 					}
-				} else if oldIndex < len(oldFactors) {
-					// 0以上であれば、旧配列の位置から新配列の位置に移動する
-					newFactors[i] = oldFactors[oldIndex]
 				}
 				newFactorsBin, err = json.Marshal(newFactors)
 				if err != nil {
 					return err
 				}
 				tx1 = tx.Model(&review).Update("review_factors", string(newFactorsBin))
-
 				if tx1.Error != nil {
 					return tx1.Error
 				}
