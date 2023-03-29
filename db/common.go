@@ -15,7 +15,7 @@ func GetNotifications(userId string, limit int) ([]NotificationJoinRead, *gorm.D
 	isRead := "COALESCE(r.is_read, is_deleted)"
 
 	tx := Db.Select("id, content, is_important, url, "+isRead+" as is_read, created_at").Table("(?) as t", db1)
-	tx = tx.Joins("left join notification_reads as r on r.notification_id = t.id and r.user_id = ?", userId)
+	tx = tx.Joins("left join notification_reads as r on r.notification_id = t.id and r.user_id = ?", userId).Order("created_at DESC, id DESC")
 	tx = tx.Scan(&notifications)
 
 	// Gormではbool型の項目でのnullはfalseになる
