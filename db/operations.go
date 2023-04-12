@@ -17,11 +17,11 @@ import (
 	"gorm.io/gorm"
 )
 
-// 一時セッションが生存する時間(秒)
+// 一時セッションが生存する時間およびセッションの生死整理を行う間隔(秒)
 const TempSessionAlive = 60
 
-// 一時セッションを削除する間隔(秒)
-const TempSessionDelSpan = 60
+// セッションを削除する間隔(秒)
+const SessionDelSpan = 60
 
 // 各ID作成に失敗した際の最大試行回数
 const RetryCreateCnt = 3
@@ -160,7 +160,7 @@ func SearchWord(columns []string, word string) *gorm.DB {
 
 func ArrangeSession() {
 	// 一時セッションの生存期間が終了したデータを削除
-	Db.Where("access_time < ?", time.Now().Add(-TempSessionDelSpan*time.Second)).Delete(&TempSession{})
+	Db.Where("access_time < ?", time.Now().Add(-TempSessionAlive*time.Second)).Delete(&TempSession{})
 	// セッションの生存期間が終了したデータを削除
 	Db.Where("expired_time < ?", time.Now()).Delete(&Session{})
 }
