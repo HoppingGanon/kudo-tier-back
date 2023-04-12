@@ -28,7 +28,7 @@ func main() {
 	db.InitDb()
 
 	// 定期処理を登録
-	go ontime.DeleteTempSession()
+	_, stop := ontime.Start()
 
 	// ミドルウェアからCORSの使用を設定する
 	// これを設定しないと、同オリジンからのアクセスが拒否される
@@ -38,6 +38,9 @@ func main() {
 
 	// リスナーポート番号
 	e.Logger.Fatal(e.Start(":" + os.Getenv("BACK_AP_PORT")))
+
+	stop()
+	db.WriteErrorLog("none", "none", "none", "stop", "システムが予期せず終了しました")
 }
 
 // 環境変数の必須チェック
